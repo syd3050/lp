@@ -9,7 +9,7 @@ namespace core;
 
 interface IFileHandle
 {
-    public function open();
+    public function open($path);
 
     public function write();
 
