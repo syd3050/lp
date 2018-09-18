@@ -7,13 +7,16 @@
  */
 
 define('DEBUG', true);
-
-include "./core/init.php";
+defined('DS') or define('DS', DIRECTORY_SEPARATOR);
+defined('ROOT_PATH') or define('ROOT_PATH', dirname(__FILE__) . DS);
 
 include "./core/Loader.php";
 \core\Loader::register();
 
+include "./core/init.php";
 include "./core/lib.php";
 
-$bootstrap = new \core\Bootstrap();
+$config = require_once "./app/config.php";
+
+$bootstrap = new \core\Bootstrap($config);
 $bootstrap->run();

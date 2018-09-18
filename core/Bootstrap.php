@@ -22,8 +22,6 @@ class Bootstrap
 
     public function run()
     {
-        set_error_handler("errorHandle",E_ALL|E_STRICT);
-
         $swConfig = empty($this->_config['swoole']) ? [] : $this->_config['swoole'];
         $server = new Server($swConfig);
         $server->start();

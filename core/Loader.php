@@ -29,18 +29,6 @@ class Loader
         }
         //替换为当前系统路径分隔符
 	    $class = strtr($class, '\\', DS);
-
-        /*$info = explode(DS, $class);
-
-        //取前缀，为namespaceMap中的key, Example: app\controller\Act
-        if(empty($info) || !isset(self::$namespaceMap[$info[0]]))
-            return self::$map[$class] = false;
-
-        $keyArr = array_splice($info, 0,1);
-        //die(var_export($info));
-        $realClass = implode($info, DS).'.php';
-        $dir = self::$namespaceMap[$keyArr[0]];
-        $file = $dir . $realClass;*/
         $file = $class . '.php';
         if (is_file($file)) {
             self::$map[$class] = $file;
