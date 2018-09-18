@@ -52,6 +52,8 @@ class FileErrorHandle implements IErrorHandle
 
     protected function write($msg)
     {
+
+
         fwrite($this->_file_handle, $msg."\n");
         fclose($this->_file_handle);
     }

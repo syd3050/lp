@@ -54,5 +54,7 @@ class Server
         });
 
         $http->start();
+
+        $GLOBALS['server'] = $http;
     }
 }
