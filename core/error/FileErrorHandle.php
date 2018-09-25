@@ -9,6 +9,7 @@
 namespace core\error;
 
 use core\exception\ServerException;
+use core\Log;
 
 class FileErrorHandle implements IErrorHandle
 {
@@ -46,16 +47,9 @@ class FileErrorHandle implements IErrorHandle
     {
         // TODO: Implement handle() method.
         $error = $this->_handle->handle();
-        $this->write($error);
+        Log::error($error."\n");
         return $error;
     }
 
-    protected function write($msg)
-    {
-
-
-        fwrite($this->_file_handle, $msg."\n");
-        fclose($this->_file_handle);
-    }
 
 }

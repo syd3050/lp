@@ -6,11 +6,12 @@
  * Time: 下午10:50
  */
 
-defined('APP_PATH') or define('APP_PATH', ROOT_PATH . 'app' . DS);
-defined('CORE_PATH') or define('CORE_PATH', ROOT_PATH . 'core' . DS);
-defined('LOG_PATH') or define('LOG_PATH', ROOT_PATH . 'log' . DS);
+defined('APP_PATH')   or define('APP_PATH',   ROOT_PATH . 'app'  . DS);
+defined('CORE_PATH')  or define('CORE_PATH',  ROOT_PATH . 'core' . DS);
+defined('LOG_PATH')   or define('LOG_PATH',   ROOT_PATH . 'log'  . DS);
+defined('CACHE_PATH') or define('CACHE_PATH', ROOT_PATH . 'cache'. DS);
 defined('START_TIME') or define('START_TIME', microtime(true));
-defined('START_MEM') or define('START_MEM', memory_get_usage());
+defined('START_MEM')  or define('START_MEM', memory_get_usage());
 
 if(DEBUG){
     error_reporting(E_ALL | E_STRICT);
@@ -33,12 +34,11 @@ function error_handler($code, $msg, $file, $line) {
     } else
     {
         try{
-            $handle = new \core\error\FileErrorHandle(
-                new \core\BaseError($errorArray,$traces)
-            );
-            $handle->handle();
-        }catch (\core\exception\ServerException $exception) {
-
+            $handle = new \core\BaseError($errorArray,$traces);
+            $error = $handle->handle();
+            \core\Log::error($error);
+        }catch (Exception $exception) {
+            \core\Log::error($exception->getMessage());
         }
     }
 }
@@ -60,11 +60,10 @@ function exception_handler(Exception $e)
     } else
     {
         try{
-            $handle = new \core\error\FileErrorHandle(
-                new \core\BaseException($e)
-            );
-            $handle->handle();
-        }catch (\core\exception\ServerException $exception) {
+            $handle = new \core\BaseException($e);
+            $exception_msg = $handle->handle();
+            \core\Log::error($exception_msg);
+        }catch (Exception $exception) {
             exit($exception->getMessage());
         }
     }
