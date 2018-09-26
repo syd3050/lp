@@ -7,24 +7,28 @@
  */
 return [
     'log'  => [
-        'type'  => 'file',  //or cache,db
+        'type'  => 'file',  //or redis,memcached,db
         'level' => 'debug', //or debug,info,error,warning
+        //如果用于该组件的属性配置，如果没有则会在这个配置文件中查找跟type类型对应对属性
+        'config' => []
     ],
 
     'cache' => [
         'type'   => 'file',  //or redis,memcached,db
-        //For cache has its own configuration,the below is for file cache.
-        //If key 'config' is not exists or empty,kernel will look for a configuration
-        //reference to its type in this file.
-        'config' => [
-            'path' => CACHE_PATH,
-            //Kernel hold an array for cache,when this array's item number reaches
-            //the max_record,Kernel will write the array to file on hardware.
-            'max_record' => 1024,
-        ]
+        'config' => []
+    ],
+
+    'database' => [
+        'host' => '',
+        'port' => '',
+        'name' => '',
+        'username' => '',
+        'password' => '',
     ],
 
     'redis'  => [
-
+        'host'     => '',
+        'port'     => '',
+        'password' => ''
     ],
 ];

@@ -11,6 +11,12 @@ use core\BaseController;
 
 class IndexController extends BaseController
 {
+
+    public function index()
+    {
+
+    }
+
     public function a()
     {
         //json_encode()

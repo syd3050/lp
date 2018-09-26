@@ -18,14 +18,18 @@ class FileLog implements ILog
 
     private static $_level = ILog::DEBUG;
 
+    private static $_config = [
+        'dir' => LOG_PATH
+    ];
 
-    public function __construct($level = ILog::DEBUG)
+    public function __construct($level = ILog::DEBUG, $config = [])
     {
         // TODO: Implement init() method.
         if(!in_array($level,ILog::LEVEL_ARR))
             throw new ConfigException("$level not exists.");
-        self::$_level = $level;
-        self::$_file = LOG_PATH."{$level}_".date('Y-m-d').".log";
+        self::$_level  = $level;
+        self::$_config = array_merge(self::$_config,$config);
+        self::$_file   = self::$_config['dir']."{$level}_".date('Y-m-d').".log";
         $this->_init();
     }
 
@@ -43,7 +47,7 @@ class FileLog implements ILog
         // TODO: Implement write() method.
         if(!self::$_file_handle)
             $this->_init();
-        fwrite(self::$_file_handle, $message."\n");
+        fwrite(self::$_file_handle, "[".self::$_level."]".$message."\n");
         fclose(self::$_file_handle);
     }
 

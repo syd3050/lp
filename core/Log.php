@@ -23,6 +23,9 @@ use core\log\ILog;
  */
 class Log
 {
+    /**
+     * @var ILog driver
+     */
     private static $_driver = null;
     private static $_dirver_type = null;
 
@@ -34,14 +37,14 @@ class Log
         $class = "\\core\\\log\\".ucwords(self::$_dirver_type)."Log";
         if(!class_exists($class))
             throw new ConfigException("$class not exists! \n");
-        self::$_driver = new $class($method);
+        $config = empty(Config::get('log.config')) ? [] : Config::get('log.config');
+        self::$_driver = new $class($method,$config);
     }
 
     public static function record($message, $type)
     {
         empty(self::$_driver) && self::_init($type);
-
-
+        self::$_driver->write($message);
     }
 
     public static function __callStatic($method,$args)
