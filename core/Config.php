@@ -17,15 +17,17 @@ class Config
     public static function get($key)
     {
         self::_load(self::$_path);
-        //Key is not allow to start with or end with "."
+        //Key不能以"."开头或结尾
         $key = trim($key,'.');
-        //If key does not contain ".", return directly
+        //如果不包含"."，直接返回配置文件数组中key对应项的值
         if(strpos($key,'.') == false )
-            return self::$_map[$key];
+            return empty(self::$_map[$key]) ? null : self::$_map[$key];
         $arr = explode('.',$key);
         $config_item = self::$_map[$key];
         foreach ($arr as $k=>$v)
         {
+            if(empty($config_item[$v]))
+                return null;
             $config_item = $config_item[$v];
         }
         return $config_item;

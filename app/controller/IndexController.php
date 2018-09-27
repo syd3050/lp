@@ -14,7 +14,7 @@ class IndexController extends BaseController
 
     public function index()
     {
-
+        return ['a'=>1,'b'=>3];
     }
 
     public function a()

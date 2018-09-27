@@ -47,20 +47,34 @@ class Server
             throw new ServerException($err);
         }
         $http = new \swoole_http_server($this->_config['host'], $this->_config['port']);
+        $http->set([
+            'reactor_num' => 2,   //reactor thread num
+            'worker_num' => 2,    //worker process num
+            'backlog' => 1024,     //listen backlog,最多同时有多少个待accept的连接
+            'max_request' => 2000,  //处理完n次请求后结束运行,重新创建一个worker进程,防止worker进程内存溢出
+            'dispatch_mode' => 1, //1平均分配，2按FD取模固定分配，3抢占式分配，默认为取模(dispatch=2)
+            'open_cpu_affinity' => 1 , //启用CPU亲和设置
+        ]);
         $http->on("start", function ($server) {
-            echo "Swoole http server is started\n";
+            echo "Swoole http server is started at ".$this->_config['host'].":".$this->_config['port']."\n";
         });
         $http->on("request", function ($request, $response) {
-            $this->_build_server($request);
-            $this->_parse($request);
-            $route = new Route($request);
+            /* */
+            //填充server相关变量
+            //$this->_build_server($request);
+            //$this->_parse($request);
+            //路由解析
+            $route = new Route($this->request);
             $result = $route->dispatch();
-            $response->header("Content-Type", $this->contentType);
+
+            $result = "hello";
+            //$response->header("Content-Type", $this->contentType);
+            $response->header("Content-Type", "text/plain");
             $response->end(json_encode($result));
         });
 
         $http->start();
-        $GLOBALS['server'] = $http;
+        //$GLOBALS['server'] = $http;
     }
 
     private function _parse($request)
