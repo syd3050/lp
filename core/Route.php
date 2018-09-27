@@ -32,10 +32,10 @@ class Route
     {
         //必须先加载路由配置文件
         $this->loadConfig();
-        $uri = explode('/',$request->uri);
-        array_shift($uri);
-        $this->path = implode('/',$uri);
-        $this->method = $request->method;
+        //$uri = explode('/',$request->uri);
+        //array_shift($uri);
+        //$this->path = implode('/',$uri);
+        //$this->method = $request->method;
     }
 
     protected function parseRoute()
@@ -107,15 +107,17 @@ class Route
 
     public function dispatch()
     {
-        $this->parseRoute();
+        //$this->parseRoute();
+        $this->controller = "Index";
+        $this->action = "index";
         $controller = 'app\\controller\\'.$this->controller.'Controller';
         if(!class_exists($controller))
             throw new ServerException("Controller {$controller} 不存在！ \n");
         $class = new $controller();
         if(!method_exists($class,$this->action))
             throw new ServerException("$class 中方法 {$this->action} 不存在 !\n");
-        if(strtolower($this->method) == 'get')
-            $this->params = array_merge($this->params,$_GET);
+        //if(strtolower($this->method) == 'get')
+            //$this->params = array_merge($this->params,$_GET);
         return call_user_func_array(array($class,$this->action),$this->params);
     }
 

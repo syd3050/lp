@@ -62,10 +62,12 @@ class Server
             /* */
             //填充server相关变量
             //$this->_build_server($request);
-            $this->_parse($request);
+            //$this->_parse($request);
             //路由解析
+
             $route = new Route($this->request);
             $result = $route->dispatch();
+
 
             $result = "hello";
             //$response->header("Content-Type", $this->contentType);

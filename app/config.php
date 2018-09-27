@@ -18,6 +18,11 @@ return [
         'config' => []
     ],
 
+    'local_cache' => [        //本机内存扩展组件
+        'type'   => 'yac',
+        'config' => []
+    ],
+
     'database' => [
         'host' => '',
         'port' => '',
