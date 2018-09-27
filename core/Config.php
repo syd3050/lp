@@ -16,14 +16,14 @@ class Config
 
     public static function get($key)
     {
-        self::_load(self::$_path);
+        self::$_map = self::_load(self::$_path);
         //Key不能以"."开头或结尾
         $key = trim($key,'.');
         //如果不包含"."，直接返回配置文件数组中key对应项的值
-        if(strpos($key,'.') == false )
+        if(strpos($key,'.') === false )
             return empty(self::$_map[$key]) ? null : self::$_map[$key];
         $arr = explode('.',$key);
-        $config_item = self::$_map[$key];
+        $config_item = self::$_map;
         foreach ($arr as $k=>$v)
         {
             if(empty($config_item[$v]))
@@ -36,7 +36,8 @@ class Config
     private static function _load($path)
     {
         if(empty(self::$_map))
-            self::$_map = require_once $path;
+            self::$_map = include $path;
+        return self::$_map;
     }
 
 }

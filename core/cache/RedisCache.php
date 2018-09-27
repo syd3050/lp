@@ -38,15 +38,19 @@ class RedisCache implements CacheDriver
         if(empty(self::$_redis))
         {
             self::$_config = array_merge(self::$_config, $config);
-            self::$_redis = new \Swoole\Coroutine\Redis();
+            if(class_exists("\\Swoole\\Coroutine\\Redis"))
+                self::$_redis = new \Swoole\Coroutine\Redis();
+            else
+                self::$_redis = new \Redis();
             self::$_redis->connect(self::$_config['host'], self::$_config['port']);
         }
     }
 
-    public function get($key)
+    public function get($key,$default='')
     {
         // TODO: Implement get() method.
-        return self::$_redis->get($key);
+        $rv = self::$_redis->get($key);
+        return empty($rv) ? $default : $rv;
     }
 
     public function set($key,$value)

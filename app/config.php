@@ -14,7 +14,7 @@ return [
     ],
 
     'cache' => [
-        'type'   => 'file',  //or redis,memcached,db
+        'type'   => 'redis',  //or redis,memcached,db
         'config' => []
     ],
 

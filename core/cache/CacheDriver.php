@@ -11,7 +11,7 @@ namespace core\cache;
 
 interface CacheDriver
 {
-    public function get($key);
+    public function get($key,$default='');
     public function set($key,$value);
     public function del($key);
     public function clear();

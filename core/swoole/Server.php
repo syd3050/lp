@@ -62,7 +62,7 @@ class Server
             /* */
             //填充server相关变量
             //$this->_build_server($request);
-            //$this->_parse($request);
+            $this->_parse($request);
             //路由解析
             $route = new Route($this->request);
             $result = $route->dispatch();
@@ -101,7 +101,7 @@ class Server
         $_SERVER['GATEWAY_INTERFACE'] = 'CGI/1.1';
         $_SERVER['SERVER_ADDR'] = $this->host;
         $_SERVER['SERVER_NAME'] = $_SERVER['SERVER_ADDR'];
-        $_SERVER['SERVER_SOFTWARE'] = md5($_SERVER['SERVER_ADDR']);
+        //$_SERVER['SERVER_SOFTWARE'] = md5($_SERVER['SERVER_ADDR']);
         $_SERVER['SERVER_PROTOCOL'] = getV($request->server,'server_protocol');
         $_SERVER['REQUEST_METHOD']  = getV($request->server,'request_method');
         $_SERVER['REQUEST_TIME']    = getV($request->server,'request_time');

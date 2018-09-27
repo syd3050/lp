@@ -82,7 +82,18 @@ class Route
 
     protected function loadConfig()
     {
+        /*
+        $config = Cache::get("route.conf");
+        if(empty($config))
+        {
+            $config = include ROOT_PATH.'app'.DS.'route.php';
+            Cache::set("route.conf",json_encode($config));
+        }else{
+            $config = json_decode($config,true);
+        }
+        */
         $config = include ROOT_PATH.'app'.DS.'route.php';
+        //Cache::set("route.conf",json_encode($config));
         if(empty($config['default_controller']))
             throw new ConfigException("route.php中缺少default_controller配置");
         if(empty($config['default_action']))
