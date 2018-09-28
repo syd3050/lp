@@ -31,13 +31,13 @@ class Log
 
     private static function _init($method)
     {
-        empty(self::$_dirver_type) && self::$_dirver_type = Config::get('log.type');
+        empty(self::$_dirver_type) && self::$_dirver_type = Config::get(Config::CONFIG,'log.type');
         if(empty(self::$_dirver_type))
             throw new ConfigException("Log type can not be empty! \n");
         $class = "\\core\\\log\\".ucwords(self::$_dirver_type)."Log";
         if(!class_exists($class))
             throw new ConfigException("$class not exists! \n");
-        $config = empty(Config::get('log.config')) ? [] : Config::get('log.config');
+        $config = empty(Config::get(Config::CONFIG,'log.config')) ? [] : Config::get(Config::CONFIG,'log.config');
         self::$_driver = new $class($method,$config);
     }
 

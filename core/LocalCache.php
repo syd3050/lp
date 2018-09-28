@@ -2,41 +2,40 @@
 /**
  * Created by PhpStorm.
  * User: syd
- * Date: 18-9-27
- * Time: 下午3:22
+ * Date: 18-9-28
+ * Time: 下午3:28
  */
 
 namespace core;
-
 
 use core\exception\ConfigException;
 use core\exception\ServerException;
 
 /**
- * Class Cache
+ * Class LocalCache
  *
  * @method mixed get($key,$default='') static
  * @method mixed set($key,$value) static
- * @method mixed del($key) static
- * @method mixed clear() static
  *
  * @package core
  */
-class Cache
+class LocalCache
 {
+    //本机内存扩展组件,默认使用Yac
+    private static $_config = [
+        'type'   => 'yac',
+        'config' => []
+    ];
+
     private static $_instance = null;
 
     private static function _init()
     {
         if(empty(self::$_instance))
         {
-            $type = Config::get(Config::CONFIG,"cache.type") ;
-            /*
-             * 获取该类型对应的配置项:如果在type下面有对应的config数组，则优先使用config对应配置
-             * 否则寻找对应对配置项，例如type=redis，那么寻找redis为key的配置项
-             */
-            $config = empty($type['config']) ? Config::get(Config::CONFIG,$type) : $type['config'];
-            $class = "core\\cache\\".ucwords($type)."Cache";
+            $type = self::$_config['type'];
+            $config = empty($type['config']) ? [] : $type['config'];
+            $class = "core\\local\\".ucwords($type)."Cache";
             if(!class_exists($class))
                 throw new ConfigException("缓存配置错误,{$class}不存在");
             return new $class($config);

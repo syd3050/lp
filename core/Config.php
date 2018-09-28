@@ -13,6 +13,9 @@ namespace core;
  * 管理框架所有配置文件，使用Yac组件
  *
  * 1.获取普通配置文件配置项使用实例：
+ * //获取整个config配置文件
+ * Config::get('config');
+ *
  * //获取app/config.php文件中的log配置项信息
  * Config::get('config','log');
  *
@@ -24,25 +27,57 @@ namespace core;
  *
  * 2.获取环境变量配置项使用实例
  * //根据当前环境获取对应的配置项，可能是来自app/env/dev.php，app/env/prod.php或者app/env/test.php，
+ * //获取整个配置文件
+ * Config::getEnv();
+ *
  * Config::getEnv('register')
  *
  * @package core
  */
 class Config
 {
+    /* 对应配置文件的标识，如果添加新对配置文件，这里需要新增对应选项 */
     const CONFIG = 'config';
-    const ROUTE = 'config';
-    const HOOK = 'config';
-    const CONFIG = 'config';
-    /*
-    private static $config_path = ROOT_PATH.'app'.DS.'config.php';
-    private static $route_path = ROOT_PATH.'app'.DS.'route.php';
-    private static $hook_path = ROOT_PATH.'app'.DS.'hook.php';
-    */
+    const ROUTE = 'route';
+    const HOOK = 'hook';
+    const JOB = 'job';
+    const SQL = 'sql';
 
-    public static function get($key)
+    /**
+     * 获取普通配置文件配置项
+     * @param string $section 对应普通配置文件标识
+     * @param string|null $key key为null时取整个配置文件
+     * @return null
+     */
+    public static function get($section,$key=null)
     {
-        $config = self::_load(self::$_path);
+        $config = self::_load($section);
+        if(empty($key))
+            return $config;
+        return self::_parse($config,$key);
+    }
+
+    /**
+     * 获取环境变量配置项
+     * @param string|null $key key为null时取整个配置文件
+     * @return null
+     */
+    public static function getEnv($key=null)
+    {
+        $config = self::_loadEnv();
+        if(empty($key))
+            return $config;
+        return self::_parse($config,$key);
+    }
+
+    /**
+     * 解析key并返回配置数组中对应的配置项
+     * @param $config
+     * @param $key
+     * @return null
+     */
+    private static function _parse($config,$key)
+    {
         //Key不能以"."开头或结尾
         $key = trim($key,'.');
         //如果不包含"."，直接返回配置文件数组中key对应项的值
@@ -59,18 +94,30 @@ class Config
         return $config_item;
     }
 
-    public static function getEnv($key)
+    /**
+     * 加载对应文件的配置内容
+     * @param $section
+     * @return mixed
+     */
+    private static function _load($section)
     {
-
-    }
-
-    private static function _load($path)
-    {
-        $config = \Yac::get('config');
+        $config = LocalCache::get($section);
         if(empty($config))
         {
-            $config = include $path;
-            \Yac::set('config',$config);
+            $config = include ROOT_PATH.'app'.DS."{$section}.php";
+            LocalCache::set($section,$config);
+        }
+        return $config;
+    }
+
+    private static function _loadEnv()
+    {
+        $env = $GLOBALS['env'];
+        $config = LocalCache::get("{$env}_config");
+        if(empty($config))
+        {
+            $config = include ROOT_PATH.'app'.DS."env".DS."{$env}.php";
+            LocalCache::set("{$env}_config",$config);
         }
         return $config;
     }
