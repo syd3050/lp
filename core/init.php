@@ -10,8 +10,6 @@ defined('APP_PATH')   or define('APP_PATH',   ROOT_PATH . 'app'  . DS);
 defined('CORE_PATH')  or define('CORE_PATH',  ROOT_PATH . 'core' . DS);
 defined('LOG_PATH')   or define('LOG_PATH',   ROOT_PATH . 'log'  . DS);
 defined('CACHE_PATH') or define('CACHE_PATH', ROOT_PATH . 'cache'. DS);
-defined('START_TIME') or define('START_TIME', microtime(true));
-defined('START_MEM')  or define('START_MEM', memory_get_usage());
 
 if(DEBUG){
     error_reporting(E_ALL | E_STRICT);
@@ -52,7 +50,6 @@ function exception_handler(Exception $e)
     {
         exit("HTTP/1.0 404 Not Found");
     }
-
     if(DEBUG)
     {
         echo "\n";

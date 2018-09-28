@@ -96,6 +96,8 @@ class Server
     {
         $_GET  = empty($request->get) ? [] : $request->get;
         $_POST = empty($request->post) ? [] : $request->post;
+        /* 获取环境变量以标识当前所属环境，默认为生产环境 */
+        $GLOBALS['env'] = getV($request->header,ENV_KEY,'prod');
         $this->host = getV($request->header,'host');
         $this->contentType = getV($request->header,'accept','text/plain');
         //填充$_SERVER数组

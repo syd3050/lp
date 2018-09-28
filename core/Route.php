@@ -82,27 +82,23 @@ class Route
 
     protected function loadConfig()
     {
-        /*
-        $config = Cache::get("route.conf");
-        if(empty($config))
+        $route_config = Yac::get('route.conf');
+        if(empty($route_config))
         {
-            $config = include ROOT_PATH.'app'.DS.'route.php';
-            Cache::set("route.conf",json_encode($config));
-        }else{
-            $config = json_decode($config,true);
+            $route_config = include ROOT_PATH.'app'.DS.'route.php';
+            Yac::set('route.conf',$route_config);
         }
-        */
-        $config = include ROOT_PATH.'app'.DS.'route.php';
+        //$config = include ROOT_PATH.'app'.DS.'route.php';
         //Cache::set("route.conf",json_encode($config));
-        if(empty($config['default_controller']))
+        if(empty($route_config['default_controller']))
             throw new ConfigException("route.php中缺少default_controller配置");
-        if(empty($config['default_action']))
+        if(empty($route_config['default_action']))
             throw new ConfigException("route.php中缺少default_action配置");
-        $this->default_controller = $config['default_controller'];
-        $this->default_action = $config['default_action'];
-        unset($config['default_controller']);
-        unset($config['default_action']);
-        $this->config = $config;
+        $this->default_controller = $route_config['default_controller'];
+        $this->default_action = $route_config['default_action'];
+        unset($route_config['default_controller']);
+        unset($route_config['default_action']);
+        $this->config = $route_config;
     }
 
     public function dispatch()

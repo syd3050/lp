@@ -7,6 +7,8 @@
  */
 
 define('DEBUG', true);
+/* env 指定header头中环境变量的标识key，默认为env，在多个项目存在时，只需修改这个值为各自不同值即可 */
+defined('ENV_KEY') or define('ENV_KEY','env');
 defined('DS') or define('DS', DIRECTORY_SEPARATOR);
 defined('ROOT_PATH') or define('ROOT_PATH', dirname(__FILE__) . DS);
 

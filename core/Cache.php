@@ -30,7 +30,7 @@ class Cache
     {
         if(empty(self::$_instance))
         {
-            $type = Config::get("cache.type") ;
+            $type = Config::get('config',"cache.type") ;
             //$type = json_encode(Config::get("cache.type")) ;
             //throw new ConfigException("缓存配置错误,{$type}不存在");
             /*
