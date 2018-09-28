@@ -10,6 +10,9 @@ return [
     'default_controller' => 'Index',
     /* 默认方法 */
     'default_action'     => 'index',
-    /* 将类似item/123的路由解析到PostController对应的view方法，参数取123 */
+    /*
+     * 右侧value的构成必须是controller/action/$1/$2/../$n的形式
+     * 将类似item/123的路由解析到PostController对应的view方法，参数取123
+     */
     'item/\d+'           => 'Post/view/$1'
 ];
