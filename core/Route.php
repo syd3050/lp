@@ -56,6 +56,41 @@ class Route
     protected function parse()
     {
         /**
+         * 先从localCache中读取路由快照，如果不存在再解析，如果存在，直接使用
+         */
+        $snapshot = LocalCache::get("route.snapshot");
+        if(!empty($snapshot))
+        {
+            $this->controller = $snapshot['controller'];
+            $this->action = $snapshot['action'];
+            /*
+             * $snapshot['pos']中保存的是route.php中路由项的value中的$1占位符和常量，例如
+             * 'item/\d+' => 'Post/view/$1/5'
+             * 这样，$snapshot['pos']中保存的是['$1','5']
+             */
+            $param_pos = $snapshot['pos'];
+            $num = count($param_pos);
+            $params = explode('/',$this->path);
+            $i = 2;
+            while ($i < $num)
+            {
+                //如果是占位符$n，取n
+                if(strpos($param_pos[$i],'$') === 0)
+                {
+                    //$1 or $n,找到对应对参数
+                    $pos = intval(trim($param_pos[$i])) - 1;
+                    if($pos >= 0 && $pos < $num)
+                    {
+                        $this->params[] = $matches[$pos];
+                    }
+                }
+                $i++;
+            }
+        }
+
+
+
+        /**
          * 路由直接配置在route.php中，直接解析得到controller+action即可，这时认为没有参数
          */
         if(isset($this->config[$this->path]))
