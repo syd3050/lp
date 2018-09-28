@@ -56,7 +56,23 @@ class Route
     protected function parse()
     {
         /**
-         * 先从localCache中读取路由快照，如果不存在再解析，如果存在，直接使用
+         * 先从localCache中读取路由快照$snapshot数组，如果不存在再解析，如果存在，直接使用
+         * 针对
+         * 'item/\d+'    => 'Post/view/$1/5',
+         * 'item/del/\d' => 'Operate/del/$1',
+         * 这样的路由设置，$snapshot数组的结构是这样的
+         * $snapshot = [
+         *      'item' => [
+         *          //c-a标识controller和action,针对的是'item/\d+'这个路由，其controller为Post,action为view
+         *          'c-a' => ['Post','view'],
+         *          'del' => [
+         *              //针对的是'item/del/\d'这个路由，其controller为Operate,action为del
+         *              'c-a' => ['Operate','del'],
+         *              
+         *
+         *          ]
+         *      ]
+         * ]
          */
         $snapshot = LocalCache::get("route.snapshot");
         if(!empty($snapshot))
