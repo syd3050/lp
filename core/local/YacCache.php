@@ -11,7 +11,7 @@ namespace core\local;
 
 class YacCache implements LocalCacheDriver
 {
-    private $_config = ['prefix' => ''];
+    private $_prefix = 'swoole_local';
     /**
      * @var null|\Yac
      */
@@ -19,14 +19,15 @@ class YacCache implements LocalCacheDriver
 
     public function __construct($config=[])
     {
-        $this->_config = array_merge($this->_config,$config);
-        $this->_yac = new \Yac($this->_config);
+        isset($config['prefix']) && $this->_prefix = $config['prefix'];
+        $this->_yac = new \Yac($this->_prefix);
     }
 
     public function get($key, $default = '')
     {
         // TODO: Implement get() method.
         $result = $this->_yac->get($key);
+        //dev_dump(['yac-key'=>$key,'yac-value'=>$result]);
         return empty($result) ? $default : $result;
     }
 

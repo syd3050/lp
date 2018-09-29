@@ -83,9 +83,9 @@ class Route
      */
     private static function _parse_route_config($route_config)
     {
-        dev_dump(['route_config'=>$route_config]);
+        //dev_dump(['route_config'=>$route_config]);
         /* 将配置文件中所有非正则表达式的项作为全匹配路径全部进本地缓存 */
-        if(empty(LocalCache::get('route.full.path')) && isset($route_config['direct-uri']))
+        if(empty(LocalCache::get('route_full_path')) && isset($route_config['direct-uri']))
         {
             $tmp = [];
             foreach ($route_config['direct-uri'] as $k=>$v)
@@ -93,11 +93,11 @@ class Route
                 //处理成[controller,action]的数组
                 $tmp[$k] = explode('/',$v);
             }
-            LocalCache::set('route.full.path',$tmp);
-            dev_dump(['route.full.path'=>$tmp]);
+            LocalCache::set('route_full_path',$tmp);
+            //dev_dump(['route.full.path'=>$tmp]);
         }
         unset($route_config['direct-uri']);
-        if(empty($route_config) || !empty(LocalCache::get('route.snapshot')))
+        if(empty($route_config) || !empty(LocalCache::get('route_snapshot')))
             return;
         $snapshot = [];
         //对每一条规则解析
@@ -123,8 +123,8 @@ class Route
                 $tmp = &$tmp[$p];
             }
         }
-        LocalCache::set('route.snapshot',$snapshot);
-        dev_dump(['route.snapshot'=>$snapshot]);
+        LocalCache::set('route_snapshot',$snapshot);
+        //dev_dump(['route.snapshot'=>$snapshot]);
     }
 
     protected function currentParse($routes)
@@ -139,7 +139,7 @@ class Route
 
     protected function parseRoute()
     {
-        $snapshot = LocalCache::get("route.snapshot");
+        $snapshot = LocalCache::get("route_snapshot");
         dev_dump(['parseRoute:snapshot'=>$snapshot]);
         /**
          * 路由直接配置在route.php中，非正则表达式，
@@ -148,7 +148,7 @@ class Route
         if(isset($this->config['direct-uri'][$this->path]))
         {
             $c_a = $this->config['direct-uri'][$this->path];
-            $route = LocalCache::get('route.full.path');
+            $route = LocalCache::get('route_full_path');
             list($this->controller,$this->action) = $route[$c_a];
             return true;
         }
