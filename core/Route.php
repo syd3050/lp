@@ -36,6 +36,7 @@ class Route
         //必须先加载路由配置文件
         $this->loadConfig();
         $uri = explode('/',$request->uri);
+        //dev_dump(['construct'=>$uri]);
         //去掉空元素及index.php
         while (empty(array_shift($uri)));
         $this->path = implode('/',$uri);
@@ -133,14 +134,18 @@ class Route
         $this->action = array_shift($routes);
         //剩下的都是参数
         $this->params = $routes;
-        dev_dump(['currentParse'=>"{$this->controller},{$this->action}"]);
+        //dev_dump(['currentParse'=>"{$this->controller},{$this->action}"]);
         return true;
     }
 
+    /**
+     * 解析当前uri
+     * @return bool
+     */
     protected function parseRoute()
     {
         $snapshot = LocalCache::get("route_snapshot");
-        dev_dump(['parseRoute:snapshot'=>$snapshot]);
+        //dev_dump(['parseRoute:snapshot'=>$snapshot]);
         /**
          * 路由直接配置在route.php中，非正则表达式，
          * 直接解析得到controller+action即可，这时认为没有参数

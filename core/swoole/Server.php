@@ -27,7 +27,7 @@ class Server
         empty($config) || $this->_config = array_merge($this->_config,$config);
     }
 
-    protected function check()
+    protected function checkConfig()
     {
         if(empty($this->_config['host'])) {
             return [false,'缺少host'];
@@ -40,9 +40,15 @@ class Server
         return [true,null];
     }
 
+    protected function checkRequest($request)
+    {
+        if(strpos(getV($request->server,'request_uri'),'index.php') === false)
+            throw new ServerException('URL必须包含index.php');
+    }
+
     public function start()
     {
-        list($r,$err) = $this->check();
+        list($r,$err) = $this->checkConfig();
         if(!$r) {
             throw new ServerException($err);
         }
@@ -59,12 +65,12 @@ class Server
             echo "Swoole http server is started at ".$this->_config['host'].":".$this->_config['port']."\n";
         });
         $http->on("request", function ($request, $response) {
-            /* */
+            /* 校验request */
+            $this->checkRequest($request);
             //填充server相关变量
             $this->_build_server($request);
             $this->_parse($request);
             //路由解析
-
             $route = new Route($this->request);
             $result = $route->dispatch();
 

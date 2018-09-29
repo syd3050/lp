@@ -22,6 +22,8 @@ return [
             'user/list' => 'User/all',
         ]
      */
-    'direct-uri'  => [],
+    'direct-uri'  => [
+        'user/list' => 'User/all',
+    ],
 
 ];
