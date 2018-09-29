@@ -10,28 +10,35 @@
  * sudo make install
  * sudo ldconfig
 
- 3.Yac组件
-  * 下载源码，位置：http://pecl.php.net/package/yac
-  * 编译：
+3.Yac组件
+* 下载源码，位置：
+  http://pecl.php.net/package/yac
+* 编译：
 
-    1.phpize
+ * 1.phpize
 
-    2../configure --with-php-config=/usr/local/php/bin/php-config
+ * 2../configure --with-php-config=/usr/local/php/bin/php-config
 
-    3.sudo make
+ * 3.sudo make
 
-    4.sudo make install
+ * 4.sudo make install
 
-    5.修改php.ini文件
+ * 5.修改php.ini文件
 
-    extension = yac.so
-    yac.enable = 1
-    ; 4M can get 30K key slots, 32M can get 100K key slots
-    yac.keys_memory_size = 4M
-    yac.values_memory_size = 64M
-    yac.compress_threshold = -1
-    ; whether enable yac with cli, default 0
-    yac.enable_cli = 0
+     extension = yac.so
+    
+     yac.enable = 1
+    
+     yac.keys_memory_size = 4M
+    
+     yac.values_memory_size = 64M
+    
+     yac.compress_threshold = -1
+    
+     yac.enable_cli = 0
+
+##安装
+    1.composer install
 
 ##使用
 1.配置文件组件
