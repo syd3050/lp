@@ -23,6 +23,8 @@ class Route
     protected $method;
     public $params=[];
     public $route;
+    const CAA = 'c-a';
+    const PAP = 'p-p';
 
     /**
      * Route constructor.
@@ -34,9 +36,13 @@ class Route
         //必须先加载路由配置文件
         $this->loadConfig();
         $uri = explode('/',$request->uri);
-        array_shift($uri); //去掉index.php
+        //去掉空元素及index.php
+        while (empty(array_shift($uri)));
+        //var_dump(['uri'=>$uri]);
         $this->path = implode('/',$uri);
+        dev_dump($this->path);
         $this->method = $request->method;
+
     }
 
     protected function loadConfig()
@@ -46,169 +52,153 @@ class Route
             throw new ConfigException("route.php中缺少default_controller配置");
         if(empty($route_config['default_action']))
             throw new ConfigException("route.php中缺少default_action配置");
-        $this->default_controller = $route_config['default_controller'];
+        $this->default_controller = ucwords($route_config['default_controller']);
         $this->default_action = $route_config['default_action'];
         unset($route_config['default_controller']);
         unset($route_config['default_action']);
-        $this->config = $route_config;
+
+        self::_parse_route_config($route_config);
     }
 
-    protected function parse()
+    /**
+     * 解析route.php配置文件，将含正则表达式的路由处理为controller-action并缓存
+     * 针对
+     * 'item/\d+'    => 'Post/view/$1/5',
+     * 'item/del/\d' => 'Operate/del/$1',
+     * 这样的路由设置，$snapshot数组的结构是这样的
+     * $snapshot = [
+     *      'item' => [
+     *          //c-a标识controller和action,针对的是'item/\d+'这个路由，其controller为Post,action为view
+     *          'c-a' => ['Post','view'],
+     *          //p-p标识参数params在uri中的位置pos
+     *          'p-p' => ['$1','5'],
+     *          'del' => [
+     *              //针对的是'item/del/\d'这个路由，其controller为Operate,action为del
+     *              'c-a' => ['Operate','del'],
+     *              'p-p' => ['$1'],
+     *          ],
+     *      ]
+     * ]
+     *
+     * @param $route_config
+     */
+    private static function _parse_route_config($route_config)
     {
-        /**
-         * 先从localCache中读取路由快照$snapshot数组，如果不存在再解析，如果存在，直接使用
-         * 针对
-         * 'item/\d+'    => 'Post/view/$1/5',
-         * 'item/del/\d' => 'Operate/del/$1',
-         * 这样的路由设置，$snapshot数组的结构是这样的
-         * $snapshot = [
-         *      'item' => [
-         *          //c-a标识controller和action,针对的是'item/\d+'这个路由，其controller为Post,action为view
-         *          'c-a' => ['Post','view'],
-         *          'del' => [
-         *              //针对的是'item/del/\d'这个路由，其controller为Operate,action为del
-         *              'c-a' => ['Operate','del'],
-         *              
-         *
-         *          ]
-         *      ]
-         * ]
-         */
-        $snapshot = LocalCache::get("route.snapshot");
-        if(!empty($snapshot))
+        /* 将配置文件中所有非正则表达式的项作为全匹配路径全部进本地缓存 */
+        if(empty(LocalCache::get('route.full.path')) && isset($route_config['direct-uri']))
         {
-            $this->controller = $snapshot['controller'];
-            $this->action = $snapshot['action'];
-            /*
-             * $snapshot['pos']中保存的是route.php中路由项的value中的$1占位符和常量，例如
-             * 'item/\d+' => 'Post/view/$1/5'
-             * 这样，$snapshot['pos']中保存的是['$1','5']
-             */
-            $param_pos = $snapshot['pos'];
-            $num = count($param_pos);
-            $params = explode('/',$this->path);
-            $i = 2;
-            while ($i < $num)
+            $tmp = [];
+            foreach ($route_config['direct-uri'] as $k=>$v)
             {
-                //如果是占位符$n，取n
-                if(strpos($param_pos[$i],'$') === 0)
+                //处理成[controller,action]的数组
+                $tmp[$k] = explode('/',$v);
+            }
+            LocalCache::set('route.full.path',$tmp);
+        }
+        unset($route_config['direct-uri']);
+        if(empty($route_config) || !empty(LocalCache::get('route.snapshot')))
+            return;
+        $snapshot = [];
+        //对每一条规则解析
+        foreach ($route_config as $pattern=>$real)
+        {
+            $patterns = explode('/',$pattern);
+            $tmp = &$snapshot;
+            //对这条规则中的每一个segment解析，'item/del/\d'有三个segment
+            foreach ($patterns as $k=>$p)
+            {
+                $chs = str_split($p);
+                //正则表达式segment
+                if(in_array_ext(['.','*','(','\\','+','?','$'],$chs))
+                    break;
+                //前面没有规则出现过这个segment
+                if(!isset($tmp[$p]))
                 {
-                    //$1 or $n,找到对应对参数
-                    $pos = intval(trim($param_pos[$i])) - 1;
-                    if($pos >= 0 && $pos < $num)
-                    {
-                        $this->params[] = $matches[$pos];
-                    }
+                    $arr = explode('/',$real);
+                    $tmp[$p][self::CAA][] = ucwords(array_shift($arr));
+                    $tmp[$p][self::CAA][] = array_shift($arr);
+                    empty($arr) || $tmp[$p][self::PAP] = $arr;
                 }
-                $i++;
+                $tmp = &$tmp[$p];
             }
         }
+        LocalCache::set('route.snapshot',$snapshot);
+    }
 
-
-
-        /**
-         * 路由直接配置在route.php中，直接解析得到controller+action即可，这时认为没有参数
-         */
-        if(isset($this->config[$this->path]))
-        {
-            $route = $this->config[$this->path];
-            $real = explode('/',$route);
-            $num = count($real);
-            if($num < 2)
-                throw new ConfigException("route.php中{$this->path}=>{$route}配置错误");
-            $this->controller = $real[0];
-            $this->action = $real[1];
-            return ;
-        }
-
-        foreach ($this->config as $pattern => $value)
-        {
-            if(preg_match("#$pattern#",$this->path,$matches))
-            {
-                //这时候matches剩下的就是$1,$2等参数了
-                array_shift($matches);
-                $params_num = count($matches);
-                //$this->params = $matches;
-                $real = explode('/',$value);
-                $num = count($real);
-                if($num < 2)
-                    throw new ConfigException("route.php中{$pattern}=>{$value}配置错误");
-                $i = 2;
-                while ($i < $num)
-                {
-                    //默认第3个参数以$n开始
-                    if(strpos($real[$i],'$') === 0)
-                    {
-                        //$1 or $n,找到对应对参数
-                        $pos = intval(trim($real[$i])) - 1;
-                        if($pos >= 0 && $pos < $params_num)
-                        {
-                            $this->params[] = $matches[$pos];
-                        }
-                    }
-                    $i++;
-                }
-                $this->controller = $real[0];
-                $this->action = $real[1];
-            }
-        }
+    protected function currentParse($routes)
+    {
+        $this->controller = ucwords(array_shift($routes));
+        $this->action = array_shift($routes);
+        //剩下的都是参数
+        $this->params = $routes;
+        dev_dump(['currentParse'=>"{$this->controller},{$this->action}"]);
+        return true;
     }
 
     protected function parseRoute()
     {
-        foreach ($this->config as $pattern => $value)
+        $snapshot = LocalCache::get("route.snapshot");
+        dev_dump(['snapshot'=>$snapshot]);
+        /**
+         * 路由直接配置在route.php中，非正则表达式，
+         * 直接解析得到controller+action即可，这时认为没有参数
+         */
+        if(isset($this->config['direct-uri'][$this->path]))
         {
-            if(preg_match("#$pattern#",$this->path,$matches))
-            {
-                //这时候matches剩下的就是$1,$2等参数了
-                array_shift($matches);
-                $params_num = count($matches);
-                //$this->params = $matches;
-                $real = explode('/',$value);
-                $num = count($real);
-                if($num < 2)
-                    throw new ConfigException("route.php中{$pattern}=>{$value}配置错误");
-                $i = 2;
-                while ($i < $num)
-                {
-                    //默认第3个参数以$n开始
-                    if(strpos($real[$i],'$') === 0)
-                    {
-                        //$1 or $n,找到对应对参数
-                        $pos = intval(trim($real[$i])) - 1;
-                        if($pos >= 0 && $pos < $params_num)
-                        {
-                            $this->params[] = $matches[$pos];
-                        }
-                    }
-                    $i++;
-                }
-                $this->controller = $real[0];
-                $this->action = $real[1];
-                break;
-            }
+            $c_a = $this->config['direct-uri'][$this->path];
+            $route = LocalCache::get('route.full.path');
+            list($this->controller,$this->action) = $route[$c_a];
+            return true;
         }
-        //没有匹配，则按照默认控制器和方法处理
-        if(empty($this->controller))
+        //将uri分解,这时候的uri已经不含index.php，因为已经在构造函数中去掉了
+        $routes = explode('/',$this->path);
+
+        if(empty($this->path))
         {
-            $this->controller = empty($uri[0]) ? $this->default_controller : $uri[0];
-            $this->action = empty($uri[1]) ? $this->default_action : $uri[1];
+            $this->controller = $this->default_controller;
+            $this->action = $this->default_action;
+            //var_dump(['uri is empty'=>"{$this->controller},{$this->action}"]);
+            return true;
+        }
+        $first = $routes[0];
+        /* 凡是不在快照中的，都即时解析 */
+        if(!isset($snapshot[$first]))
+            return $this->currentParse($routes);
+        if(!empty($snapshot)) {
+            $rTmp = $routes;
+            foreach ($rTmp as $k => $token) {
+                if (!isset($snapshot[$token]))
+                    break;
+                $snapshot = $snapshot[$token];
+                unset($rTmp[$k]);
+            }
+            //取controller和action
+            list($this->controller, $this->action) = $snapshot[self::CAA];
+            foreach ($snapshot[self::PAP] as $k => $p) {
+                if (substr($p, 0, 1) == '$') {
+                    $index = intval(ltrim($p, '$'));
+                    /**
+                     * 取uri对应位置的值作为参数，不支持
+                     * 'item/abcc(\d+)' => 'Post/view/$1'这样的解析,$1将被替换为abccxx
+                     */
+                    $this->params[] = $rTmp[$index - 1];
+                    continue;
+                }
+                $this->params[] = $p; //常量参数直接填入
+            }
+            return true;
         }
     }
 
     public function dispatch()
     {
-        //$this->parseRoute();
-        $this->controller = "Index";
-        $this->action = "index";
+        $this->parseRoute();
         $controller = 'app\\controller\\'.$this->controller.'Controller';
         if(!class_exists($controller))
             throw new ServerException("Controller {$controller} 不存在！ \n");
         $class = new $controller();
         if(!method_exists($class,$this->action))
             throw new ServerException("$class 中方法 {$this->action} 不存在 !\n");
-        //if(strtolower($this->method) == 'get')
-            //$this->params = array_merge($this->params,$_GET);
         return call_user_func_array(array($class,$this->action),$this->params);
     }
 

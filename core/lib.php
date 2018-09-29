@@ -1,6 +1,7 @@
 <?php
 
-if(!function_exists("isAPP")) {
+if(!function_exists("isAPP"))
+{
   function isAPP()
   {
 	  	$from = empty($_SERVER['REQUEST_URI']) ? '' : $_SERVER['REQUEST_URI'] . '&';
@@ -13,7 +14,8 @@ if(!function_exists("isAPP")) {
 	}
 }
 
-if(!function_exists("randStr")) {
+if(!function_exists("randStr"))
+{
     function randStr($len=10)
     {
         $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz';
@@ -34,7 +36,8 @@ if(!function_exists('getV')) {
     }
 }
 
-if(!function_exists('isAjax')) {
+if(!function_exists('isAjax'))
+{
     function isAjax()
     {
         if(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
@@ -43,6 +46,42 @@ if(!function_exists('isAjax')) {
             return true;
         else
             return false;
+    }
+}
+
+if(!function_exists('in_array_ext'))
+{
+    /**
+     * 查看needle是否在数组$haystack中，不考虑key
+     * $needle中任何一个元素出现在$haystack中都返回true
+     * @param string|array $needle 只支持二维数组，数组中任何一个元素出现在haystack中都返回true
+     * @param array $haystack
+     * @return bool
+     */
+    function in_array_ext($needle,$haystack)
+    {
+        if(is_array($needle))
+        {
+            $reverse = array_flip($haystack);
+            foreach ($needle as $value)
+            {
+                if(isset($reverse[$value]))
+                    return true;
+            }
+            return false;
+        }
+        return in_array($needle,$haystack);
+    }
+}
+
+if(!function_exists('dev_dump'))
+{
+    function dev_dump($obj)
+    {
+        if($GLOBALS[ENV_KEY] == 'dev')
+        {
+            var_dump($obj);
+        }
     }
 }
 

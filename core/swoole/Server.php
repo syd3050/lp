@@ -61,18 +61,18 @@ class Server
         $http->on("request", function ($request, $response) {
             /* */
             //填充server相关变量
-            //$this->_build_server($request);
-            //$this->_parse($request);
+            $this->_build_server($request);
+            $this->_parse($request);
             //路由解析
 
             $route = new Route($this->request);
             $result = $route->dispatch();
 
 
-            $result = "hello";
+            //$result = "hello";
             //$response->header("Content-Type", $this->contentType);
             $response->header("Content-Type", "text/plain");
-            $response->end(json_encode($result));
+            $response->end(json_encode($result)."\n");
         });
 
         $http->start();
@@ -97,7 +97,7 @@ class Server
         $_GET  = empty($request->get) ? [] : $request->get;
         $_POST = empty($request->post) ? [] : $request->post;
         /* 获取环境变量以标识当前所属环境，默认为生产环境 */
-        $GLOBALS['env'] = getV($request->header,ENV_KEY,'prod');
+        $GLOBALS['env'] = getV($request->header,ENV_KEY,DEFAULT_ENV);
         $this->host = getV($request->header,'host');
         $this->contentType = getV($request->header,'accept','text/plain');
         //填充$_SERVER数组
