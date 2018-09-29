@@ -36,6 +36,7 @@ class LocalCache
             $type = self::$_config['type'];
             $config = empty($type['config']) ? [] : $type['config'];
             $class = "core\\local\\".ucwords($type)."Cache";
+            dev_dump(['LocalCache'=>$class]);
             if(!class_exists($class))
                 throw new ConfigException("缓存配置错误,{$class}不存在");
             return new $class($config);

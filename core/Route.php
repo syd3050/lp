@@ -38,9 +38,8 @@ class Route
         $uri = explode('/',$request->uri);
         //去掉空元素及index.php
         while (empty(array_shift($uri)));
-        //var_dump(['uri'=>$uri]);
         $this->path = implode('/',$uri);
-        dev_dump($this->path);
+        //dev_dump($this->path);
         $this->method = $request->method;
 
     }
@@ -84,6 +83,7 @@ class Route
      */
     private static function _parse_route_config($route_config)
     {
+        dev_dump(['route_config'=>$route_config]);
         /* 将配置文件中所有非正则表达式的项作为全匹配路径全部进本地缓存 */
         if(empty(LocalCache::get('route.full.path')) && isset($route_config['direct-uri']))
         {
@@ -94,6 +94,7 @@ class Route
                 $tmp[$k] = explode('/',$v);
             }
             LocalCache::set('route.full.path',$tmp);
+            dev_dump(['route.full.path'=>$tmp]);
         }
         unset($route_config['direct-uri']);
         if(empty($route_config) || !empty(LocalCache::get('route.snapshot')))
@@ -123,6 +124,7 @@ class Route
             }
         }
         LocalCache::set('route.snapshot',$snapshot);
+        dev_dump(['route.snapshot'=>$snapshot]);
     }
 
     protected function currentParse($routes)
@@ -138,7 +140,7 @@ class Route
     protected function parseRoute()
     {
         $snapshot = LocalCache::get("route.snapshot");
-        dev_dump(['snapshot'=>$snapshot]);
+        dev_dump(['parseRoute:snapshot'=>$snapshot]);
         /**
          * 路由直接配置在route.php中，非正则表达式，
          * 直接解析得到controller+action即可，这时认为没有参数
