@@ -7,7 +7,7 @@
  */
 namespace core;
 
-use core\traitpkg\WebTrait;
+use core\traits\WebTrait;
 
 class BaseController
 {

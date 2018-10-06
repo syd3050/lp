@@ -1,0 +1,10 @@
+{
+  "require": {
+    "psr/http-message":"^1.0.1",
+    "psr/http-factory":"^1.0.0"
+  },
+  "autoload": {
+    "app\\"  : "app/",
+    "core\\" : "core/"
+  }
+}

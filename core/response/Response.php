@@ -6,10 +6,10 @@
  * Time: 下午2:11
  */
 
-namespace core;
+namespace core\response;
 
 
-use core\traitpkg\WebTrait;
+use core\traits\WebTrait;
 
 class Response
 {

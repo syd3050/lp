@@ -11,6 +11,7 @@ namespace core;
 
 use core\exception\ConfigException;
 use core\exception\ServerException;
+use Psr\Http\Message\RequestInterface;
 
 class Route
 {
@@ -28,7 +29,7 @@ class Route
 
     /**
      * Route constructor.
-     * @param Request $request
+     * @param RequestInterface $request
      * @throws ConfigException
      */
     public function __construct($request)
@@ -157,9 +158,6 @@ class Route
             list($this->controller,$this->action) = $route[$c_a];
             return true;
         }
-        //将uri分解,这时候的uri已经不含index.php，因为已经在构造函数中去掉了
-        $routes = explode('/',$this->path);
-
         if(empty($this->path))
         {
             $this->controller = $this->default_controller;
@@ -167,6 +165,8 @@ class Route
             //var_dump(['uri is empty'=>"{$this->controller},{$this->action}"]);
             return true;
         }
+        //将uri分解,这时候的uri已经不含index.php，因为已经在构造函数中去掉了
+        $routes = explode('/',$this->path);
         $first = $routes[0];
         /* 凡是不在快照中的，都即时解析 */
         if(!isset($snapshot[$first]))

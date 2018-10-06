@@ -5,7 +5,7 @@
  * Date: 18-9-26
  * Time: 下午1:46
  */
-namespace core\traitpkg;
+namespace core\traits;
 
 trait WebTrait
 {
