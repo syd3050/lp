@@ -233,7 +233,7 @@ class Uri implements UriInterface
     public static function isSameDocumentReference(UriInterface $uri, UriInterface $base = null)
     {
         if ($base !== null) {
-            $uri = UriResolver::resolve($base, $uri);
+            $uri = resolve($base, $uri);
             return ($uri->getScheme() === $base->getScheme())
                 && ($uri->getAuthority() === $base->getAuthority())
                 && ($uri->getPath() === $base->getPath())
@@ -249,12 +249,12 @@ class Uri implements UriInterface
      *
      * @return string
      *
-     * @deprecated since version 1.4. Use UriResolver::removeDotSegments instead.
-     * @see UriResolver::removeDotSegments
+     * @deprecated since version 1.4. Use removeDotSegments instead.
+     * @see removeDotSegments
      */
     public static function removeDotSegments($path)
     {
-        return UriResolver::removeDotSegments($path);
+        return removeDotSegments($path);
     }
 
     /**
@@ -265,15 +265,15 @@ class Uri implements UriInterface
      *
      * @return UriInterface
      *
-     * @deprecated since version 1.4. Use UriResolver::resolve instead.
-     * @see UriResolver::resolve
+     * @deprecated since version 1.4. Use resolve instead.
+     * @see resolve
      */
     public static function resolve(UriInterface $base, $rel)
     {
         if (!($rel instanceof UriInterface)) {
             $rel = new self($rel);
         }
-        return UriResolver::resolve($base, $rel);
+        return resolve($base, $rel);
     }
 
     /**
