@@ -45,9 +45,10 @@ class Request implements RequestInterface
     private $requestTarget;
     /** @var UriInterface */
     private $uri;
+
     /**
      * @param string                               $method  HTTP method
-     * @param string|UriInterface                  $uri     URI
+     * @param UriInterface                         $uri     URI
      * @param array                                $headers Request headers
      * @param string|null|resource|StreamInterface $body    Request body
      * @param string                               $version Protocol version
@@ -59,12 +60,11 @@ class Request implements RequestInterface
         $body = null,
         $version = '1.1'
     ) {
-        if (!($uri instanceof UriInterface)) {
-            $uri = new Uri($uri);
-        }
+        if (!($uri instanceof UriInterface))
+            throw new \InvalidArgumentException("Parameter uri must be an instance of UriInterface");
         $this->method = strtoupper($method);
         $this->uri = $uri;
-        $this->setHeaders($headers);
+        empty($headers) || $this->setHeaders($headers);
         $this->protocol = $version;
         if (!$this->hasHeader('Host')) {
             $this->updateHostFromUri();

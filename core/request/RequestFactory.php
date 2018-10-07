@@ -8,11 +8,13 @@
 
 namespace core\request;
 
+use core\Config;
+use core\exception\ConfigException;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
-class RequestFactory implements RequestFactoryInterface
+final class RequestFactory implements RequestFactoryInterface
 {
 
     /**
@@ -24,9 +26,20 @@ class RequestFactory implements RequestFactoryInterface
      *     instance based on it.
      *
      * @return RequestInterface
+     * @throws ConfigException
      */
     public function createRequest(string $method, $uri): RequestInterface
     {
         // TODO: Implement createRequest() method.
+        if (!($uri instanceof UriInterface)) {
+            $uri = new Uri($uri);
+        }
+        $request_class = Config::get(Config::CONFIG,'request');
+        if(class_exists($request_class))
+        {
+            return new $request_class($method, $uri);
+        }
+        //使用默认的request
+        return new Request($method, $uri);
     }
 }

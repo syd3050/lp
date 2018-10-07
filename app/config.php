@@ -31,4 +31,7 @@ return [
         'port'     => '6379',
         'password' => ''
     ],
+
+    //Request类路径
+    //'request' => 'core\\request\\Request',
 ];

@@ -1054,6 +1054,25 @@ if(!function_exists('resolve'))
     }
 }
 
+/**
+ * 去除数组或者字符串前后空格
+ */
+if(!function_exists('trimItem'))
+{
+    function trimItem($item)
+    {
+        if(is_string($item))
+            return trim($item, " \t");
+        if(is_array($item))
+        {
+            return array_map(function ($value) {
+                return trim($value, " \t");
+            }, $item);
+        }
+        return $item;
+    }
+}
+
 
 
 

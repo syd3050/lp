@@ -170,7 +170,7 @@ trait MessageTrait
         if (!is_array($value)) {
             $value = [$value];
         }
-        $value = $this->trimHeaderValues($value);
+        $value = trimItem($value);
         $normalized = strtolower($header);
         $new = clone $this;
         if (isset($new->headerNames[$normalized])) {
@@ -182,15 +182,14 @@ trait MessageTrait
     }
 
     /**
-     * Return an instance with the specified header appended with the given value.
+     * 返回一个新的实例化对象，其包含旧有的header头及值，加上以参数指定的header头和值。
      *
-     * Existing values for the specified header will be maintained. The new
-     * value(s) will be appended to the existing list. If the header did not
-     * exist previously, it will be added.
+     * 如果指定的header头已存在，其旧有的值不变，新的值添加到旧的值后面。如果header头不存在则新增。
      *
      * This method MUST be implemented in such a way as to retain the
      * immutability of the message, and MUST return an instance that has the
      * new header and/or value.
+     * 
      *
      * @param string $name Case-insensitive header field name to add.
      * @param string|string[] $value Header value(s).
@@ -202,7 +201,7 @@ trait MessageTrait
         if (!is_array($value)) {
             $value = [$value];
         }
-        $value = $this->trimHeaderValues($value);
+        $value = trimItem($value);
         $normalized = strtolower($header);
         $new = clone $this;
         if (isset($new->headerNames[$normalized])) {
@@ -282,7 +281,8 @@ trait MessageTrait
             if (!is_array($value)) {
                 $value = [$value];
             }
-            $value = $this->trimHeaderValues($value);
+            //去掉header值两边的空格
+            $value = trimItem($value);
             $normalized = strtolower($header);
             if (isset($this->headerNames[$normalized])) {
                 $header = $this->headerNames[$normalized];
@@ -294,24 +294,4 @@ trait MessageTrait
         }
     }
 
-    /**
-     * Trims whitespace from the header values.
-     *
-     * Spaces and tabs ought to be excluded by parsers when extracting the field value from a header field.
-     *
-     * header-field = field-name ":" OWS field-value OWS
-     * OWS          = *( SP / HTAB )
-     *
-     * @param string[] $values Header values
-     *
-     * @return string[] Trimmed header values
-     *
-     * @see https://tools.ietf.org/html/rfc7230#section-3.2.4
-     */
-    private function trimHeaderValues(array $values)
-    {
-        return array_map(function ($value) {
-            return trim($value, " \t");
-        }, $values);
-    }
 }
