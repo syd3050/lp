@@ -9,6 +9,7 @@
 namespace core\request;
 
 
+use core\stream\LazyOpenStream;
 use core\stream\Stream;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -183,6 +184,27 @@ class UploadedFile implements UploadedFileInterface
     }
 
     /**
+     * @throws \RuntimeException if is moved or not ok
+     */
+    private function validateActive()
+    {
+        if (false === $this->isOk()) {
+            throw new \RuntimeException('Cannot retrieve stream due to upload error');
+        }
+        if ($this->isMoved()) {
+            throw new \RuntimeException('Cannot retrieve stream after it has already been moved');
+        }
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isMoved()
+    {
+        return $this->moved;
+    }
+
+    /**
      * Retrieve a stream representing the uploaded file.
      *
      * This method MUST return a StreamInterface instance, representing the
@@ -261,7 +283,7 @@ class UploadedFile implements UploadedFileInterface
             $this->moved = true;
         }
         if (false === $this->moved) {
-            throw new RuntimeException(
+            throw new \RuntimeException(
                 sprintf('Uploaded file could not be moved to %s', $targetPath)
             );
         }
