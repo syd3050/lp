@@ -1088,4 +1088,99 @@ if(function_exists('getallheaders_ext'))
     }
 }
 
+if(!function_exists('getUriFromGlobals'))
+{
+    function getUriFromGlobals()
+    {
+        $uri = new \core\request\Uri('');
+        $scheme = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
+        $uri = $uri->withScheme($scheme);
+        $hasPort = false;
+        if (isset($_SERVER['HTTP_HOST'])) {
+            $hostHeaderParts = explode(':', $_SERVER['HTTP_HOST']);
+            $uri = $uri->withHost($hostHeaderParts[0]);
+            if (isset($hostHeaderParts[1])) {
+                $hasPort = true;
+                $uri = $uri->withPort($hostHeaderParts[1]);
+            }
+        } elseif (isset($_SERVER['SERVER_NAME'])) {
+            $uri = $uri->withHost($_SERVER['SERVER_NAME']);
+        } elseif (isset($_SERVER['SERVER_ADDR'])) {
+            $uri = $uri->withHost($_SERVER['SERVER_ADDR']);
+        }
+        if (!$hasPort && isset($_SERVER['SERVER_PORT'])) {
+            $uri = $uri->withPort($_SERVER['SERVER_PORT']);
+        }
+        $hasQuery = false;
+        if (isset($_SERVER['REQUEST_URI'])) {
+            $requestUriParts = explode('?', $_SERVER['REQUEST_URI'], 2);
+            $uri = $uri->withPath($requestUriParts[0]);
+            if (isset($requestUriParts[1])) {
+                $hasQuery = true;
+                $uri = $uri->withQuery($requestUriParts[1]);
+            }
+        }
+        if (!$hasQuery && isset($_SERVER['QUERY_STRING'])) {
+            $uri = $uri->withQuery($_SERVER['QUERY_STRING']);
+        }
+        return $uri;
+    }
+}
+
+if(!function_exists('normalizeFiles'))
+{
+    function normalizeFiles(array $files)
+    {
+        $normalized = [];
+        foreach ($files as $key => $value) {
+            if ($value instanceof \Psr\Http\Message\UploadedFileInterface) {
+                $normalized[$key] = $value;
+            } elseif (is_array($value) && isset($value['tmp_name'])) {
+                $normalized[$key] = createUploadedFileFromSpec($value);
+            } elseif (is_array($value)) {
+                $normalized[$key] = normalizeFiles($value);
+                continue;
+            } else {
+                throw new \InvalidArgumentException('Invalid value in files specification');
+            }
+        }
+        return $normalized;
+    }
+}
+
+if(!function_exists('createUploadedFileFromSpec'))
+{
+    function createUploadedFileFromSpec(array $value)
+    {
+        if (is_array($value['tmp_name'])) {
+            return normalizeNestedFileSpec($value);
+        }
+        return new \core\request\UploadedFile(
+            $value['tmp_name'],
+            (int) $value['size'],
+            (int) $value['error'],
+            $value['name'],
+            $value['type']
+        );
+    }
+}
+
+if(!function_exists('normalizeNestedFileSpec'))
+{
+    function normalizeNestedFileSpec(array $files = [])
+    {
+        $normalizedFiles = [];
+        foreach (array_keys($files['tmp_name']) as $key) {
+            $spec = [
+                'tmp_name' => $files['tmp_name'][$key],
+                'size'     => $files['size'][$key],
+                'error'    => $files['error'][$key],
+                'name'     => $files['name'][$key],
+                'type'     => $files['type'][$key],
+            ];
+            $normalizedFiles[$key] = createUploadedFileFromSpec($spec);
+        }
+        return $normalizedFiles;
+    }
+}
 

@@ -9,7 +9,9 @@ namespace core\swoole;
 
 use core\exception\ServerException;
 use core\Request;
+use core\request\ServerRequestFactory;
 use core\Route;
+use core\stream\LazyOpenStream;
 
 class Server
 {
@@ -18,8 +20,16 @@ class Server
     public $request;
 
     private $_config = [
-        'host'  =>  '127.0.0.1',
-        'port'  =>  9501,
+        'host'   =>  '127.0.0.1',
+        'port'   =>  9501,
+        'swoole' => [
+            'reactor_num' => 2,   //reactor thread num
+            'worker_num' => 2,    //worker process num
+            'backlog' => 1024,     //listen backlog,最多同时有多少个待accept的连接
+            'max_request' => 2000,  //处理完n次请求后结束运行,重新创建一个worker进程,防止worker进程内存溢出
+            'dispatch_mode' => 1, //1平均分配，2按FD取模固定分配，3抢占式分配，默认为取模(dispatch=2)
+            'open_cpu_affinity' => 1 , //启用CPU亲和设置
+        ]
     ];
 
     public function __construct($config=[])
@@ -53,14 +63,7 @@ class Server
             throw new ServerException($err);
         }
         $http = new \swoole_http_server($this->_config['host'], $this->_config['port']);
-        $http->set([
-            'reactor_num' => 2,   //reactor thread num
-            'worker_num' => 2,    //worker process num
-            'backlog' => 1024,     //listen backlog,最多同时有多少个待accept的连接
-            'max_request' => 2000,  //处理完n次请求后结束运行,重新创建一个worker进程,防止worker进程内存溢出
-            'dispatch_mode' => 1, //1平均分配，2按FD取模固定分配，3抢占式分配，默认为取模(dispatch=2)
-            'open_cpu_affinity' => 1 , //启用CPU亲和设置
-        ]);
+        $http->set($this->_config['swoole']);
         $http->on("start", function ($server) {
             echo "Swoole http server is started at ".$this->_config['host'].":".$this->_config['port']."\n";
         });
@@ -69,7 +72,7 @@ class Server
             $this->checkRequest($request);
             //填充server相关变量
             $this->_build_server($request);
-            $this->_parse($request);
+            $this->request = $this->_build_request($request);
             //路由解析
             $route = new Route($this->request);
             $result = $route->dispatch();
@@ -85,23 +88,24 @@ class Server
         //$GLOBALS['server'] = $http;
     }
 
-    private function _parse($request)
+    private function _build_request($request)
     {
-        $this->request = new Request();
-        $this->request->header = $request->header;
-        $this->request->method = getV($request->server,'request_method');
-        $params = [];
-        empty($request->get) || $params = array_merge($params,$request->get);
-        empty($request->post) || $params = array_merge($params,$request->post);
-        $this->request->params = $params;
-        $this->request->uri = getV($request->server,'request_uri');
-        return $this->request;
+        $method = getV($request->server,'request_method','GET');
+        $uri = getUriFromGlobals();
+        $serverRequest= (new ServerRequestFactory())
+            ->createServerRequest($method,$uri,$_SERVER);
+        return $serverRequest
+            ->withCookieParams($_COOKIE)
+            ->withQueryParams($_GET)
+            ->withParsedBody($_POST)
+            ->withUploadedFiles(normalizeFiles($_FILES));
     }
 
     private function _build_server($request)
     {
         $_GET  = empty($request->get) ? [] : $request->get;
         $_POST = empty($request->post) ? [] : $request->post;
+        $_COOKIE = empty($request->cookie) ? [] : $request->cookie;
         /* 获取环境变量以标识当前所属环境，默认为生产环境 */
         $GLOBALS['env'] = getV($request->header,ENV_KEY,DEFAULT_ENV);
         $this->host = getV($request->header,'host');
