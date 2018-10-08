@@ -404,6 +404,10 @@ class Uri implements UriInterface
         return $this->fragment;
     }
 
+    /**
+     * @param string $scheme
+     * @return $this|Uri|UriInterface
+     */
     public function withScheme($scheme)
     {
         $scheme = $this->filterScheme($scheme);
@@ -417,6 +421,11 @@ class Uri implements UriInterface
         return $new;
     }
 
+    /**
+     * @param string $user
+     * @param null $password
+     * @return $this|Uri|UriInterface
+     */
     public function withUserInfo($user, $password = null)
     {
         $info = $user;
@@ -432,6 +441,10 @@ class Uri implements UriInterface
         return $new;
     }
 
+    /**
+     * @param string $host
+     * @return $this|Uri|UriInterface
+     */
     public function withHost($host)
     {
         $host = $this->filterHost($host);
@@ -444,6 +457,10 @@ class Uri implements UriInterface
         return $new;
     }
 
+    /**
+     * @param int|null $port
+     * @return $this|Uri|UriInterface
+     */
     public function withPort($port)
     {
         $port = $this->filterPort($port);
@@ -457,6 +474,10 @@ class Uri implements UriInterface
         return $new;
     }
 
+    /**
+     * @param string $path
+     * @return $this|Uri|UriInterface
+     */
     public function withPath($path)
     {
         $path = $this->filterPath($path);
@@ -469,6 +490,10 @@ class Uri implements UriInterface
         return $new;
     }
 
+    /**
+     * @param string $query
+     * @return $this|Uri|UriInterface
+     */
     public function withQuery($query)
     {
         $query = $this->filterQueryAndFragment($query);
@@ -480,6 +505,10 @@ class Uri implements UriInterface
         return $new;
     }
 
+    /**
+     * @param string $fragment
+     * @return $this|Uri|UriInterface
+     */
     public function withFragment($fragment)
     {
         $fragment = $this->filterQueryAndFragment($fragment);

@@ -9,6 +9,7 @@
 namespace core\request;
 
 
+use core\Config;
 use Psr\Http\Message\ServerRequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -35,5 +36,11 @@ class ServerRequestFactory implements ServerRequestFactoryInterface
     public function createServerRequest(string $method, $uri, array $serverParams = []): ServerRequestInterface
     {
         // TODO: Implement createServerRequest() method.
+        $request_class = Config::get(Config::CONFIG,'server_request');
+        if(class_exists($request_class))
+        {
+            return new $request_class($method, $uri, $serverParams);
+        }
+        return ServerRequest::fromGlobals();
     }
 }

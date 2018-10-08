@@ -9,6 +9,7 @@
 namespace core\request;
 
 
+use core\stream\LazyOpenStream;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -57,22 +58,23 @@ class ServerRequest extends Request implements ServerRequestInterface
     /**
      * @param string                               $method       HTTP method
      * @param string|UriInterface                  $uri          URI
+     * @param array                                $serverParams Typically the $_SERVER superglobal
      * @param array                                $headers      Request headers
      * @param string|null|resource|StreamInterface $body         Request body
      * @param string                               $version      Protocol version
-     * @param array                                $serverParams Typically the $_SERVER superglobal
      */
     public function __construct(
         $method,
         $uri,
+        array $serverParams = [],
         array $headers = [],
         $body = null,
-        $version = '1.1',
-        array $serverParams = []
+        $version = '1.1'
     ) {
         $this->serverParams = $serverParams;
         parent::__construct($method, $uri, $headers, $body, $version);
     }
+
     /**
      * Return an UploadedFile instance array.
      *
@@ -97,11 +99,10 @@ class ServerRequest extends Request implements ServerRequestInterface
         }
         return $normalized;
     }
+
     /**
-     * Create and return an UploadedFile instance from a $_FILES specification.
-     *
-     * If the specification represents an array of values, this method will
-     * delegate to normalizeNestedFileSpec() and return that return value.
+     * 从$_FILES变量中构建UploadFile
+     * 如果是文件数组，需要调用normalizeNestedFileSpec方法创建
      *
      * @param array $value $_FILES struct
      * @return array|UploadedFileInterface
@@ -119,11 +120,9 @@ class ServerRequest extends Request implements ServerRequestInterface
             $value['type']
         );
     }
+
     /**
-     * Normalize an array of file specifications.
-     *
-     * Loops through all nested files and returns a normalized array of
-     * UploadedFileInterface instances.
+     * 创建文件数组
      *
      * @param array $files
      * @return UploadedFileInterface[]
@@ -143,6 +142,7 @@ class ServerRequest extends Request implements ServerRequestInterface
         }
         return $normalizedFiles;
     }
+
     /**
      * Return a ServerRequest populated with superglobals:
      * $_GET
@@ -156,17 +156,18 @@ class ServerRequest extends Request implements ServerRequestInterface
     public static function fromGlobals()
     {
         $method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
-        $headers = getallheaders();
+        $headers = getallheaders_ext();
         $uri = self::getUriFromGlobals();
         $body = new LazyOpenStream('php://input', 'r+');
         $protocol = isset($_SERVER['SERVER_PROTOCOL']) ? str_replace('HTTP/', '', $_SERVER['SERVER_PROTOCOL']) : '1.1';
-        $serverRequest = new ServerRequest($method, $uri, $headers, $body, $protocol, $_SERVER);
+        $serverRequest = new ServerRequest($method, $uri, $_SERVER, $headers, $body, $protocol);
         return $serverRequest
             ->withCookieParams($_COOKIE)
             ->withQueryParams($_GET)
             ->withParsedBody($_POST)
             ->withUploadedFiles(self::normalizeFiles($_FILES));
     }
+
     /**
      * Get a Uri populated with values from $_SERVER.
      *
@@ -174,7 +175,8 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public static function getUriFromGlobals() {
         $uri = new Uri('');
-        $uri = $uri->withScheme(!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http');
+        $scheme = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
+        $uri = $uri->withScheme($scheme);
         $hasPort = false;
         if (isset($_SERVER['HTTP_HOST'])) {
             $hostHeaderParts = explode(':', $_SERVER['HTTP_HOST']);
