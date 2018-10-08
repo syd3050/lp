@@ -16,8 +16,6 @@ trait MessageTrait
 {
     /** @var array Map of all registered headers, as original name => array of values */
     private $headers = [];
-    /** @var array Map of lowercase header name => original name at registration */
-    private $headerNames  = [];
     /** @var string */
     private $protocol = '1.1';
     /** @var StreamInterface */
@@ -51,9 +49,6 @@ trait MessageTrait
      */
     public function withProtocolVersion($version)
     {
-        if ($this->protocol === $version) {
-            return $this;
-        }
         $new = clone $this;
         $new->protocol = $version;
         return $new;
@@ -90,39 +85,29 @@ trait MessageTrait
     }
 
     /**
-     * Checks if a header exists by the given case-insensitive name.
+     * 是否存在参数中header头对应的值，header头大小写不敏感.
      *
-     * @param string $name Case-insensitive header field name.
-     * @return bool Returns true if any header names match the given header
-     *     name using a case-insensitive string comparison. Returns false if
-     *     no matching header name is found in the message.
+     * @param string $header Header头，大小写不敏感
+     * @return bool  存在返回true,否则返回false.
      */
     public function hasHeader($header)
     {
-        return isset($this->headerNames[strtolower($header)]);
+        return isset($this->header[strtolower($header)]);
     }
 
     /**
-     * Retrieves a message header value by the given case-insensitive name.
+     * 返回参数中header头对应的值，header头大小写不敏感
+     * 如果不存在，返回空数组
      *
-     * This method returns an array of all the header values of the given
-     * case-insensitive header name.
-     *
-     * If the header does not appear in the message, this method MUST return an
-     * empty array.
-     *
-     * @param string $name Case-insensitive header field name.
-     * @return string[] An array of string values as provided for the given
-     *    header. If the header does not appear in the message, this method MUST
-     *    return an empty array.
+     * @param  string   $header Header头，大小写不敏感.
+     * @return string[] header头对应的值.
      */
     public function getHeader($header)
     {
         $header = strtolower($header);
-        if (!isset($this->headerNames[$header])) {
+        if (!isset($this->headers[$header])) {
             return [];
         }
-        $header = $this->headerNames[$header];
         return $this->headers[$header];
     }
 
@@ -140,7 +125,7 @@ trait MessageTrait
      * If the header does not appear in the message, this method MUST return
      * an empty string.
      *
-     * @param string $name Case-insensitive header field name.
+     * @param string $header Case-insensitive header field name.
      * @return string A string of values as provided for the given header
      *    concatenated together using a comma. If the header does not appear in
      *    the message, this method MUST return an empty string.
@@ -151,7 +136,7 @@ trait MessageTrait
     }
 
     /**
-     * Return an instance with the provided value replacing the specified header.
+     * 返回一个新的实例化对象，其包含旧有的header头及值被替换为参数指定的header头和值
      *
      * While header names are case-insensitive, the casing of the header will
      * be preserved by this function, and returned from getHeaders().
@@ -160,7 +145,7 @@ trait MessageTrait
      * immutability of the message, and MUST return an instance that has the
      * new and/or updated header and value.
      *
-     * @param string $name Case-insensitive header field name.
+     * @param string $header  Case-insensitive header field name.
      * @param string|string[] $value Header value(s).
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
@@ -171,13 +156,8 @@ trait MessageTrait
             $value = [$value];
         }
         $value = trimItem($value);
-        $normalized = strtolower($header);
         $new = clone $this;
-        if (isset($new->headerNames[$normalized])) {
-            unset($new->headers[$new->headerNames[$normalized]]);
-        }
-        $new->headerNames[$normalized] = $header;
-        $new->headers[$header] = $value;
+        $new->headers[strtolower($header)] = $value;
         return $new;
     }
 
@@ -185,14 +165,10 @@ trait MessageTrait
      * 返回一个新的实例化对象，其包含旧有的header头及值，加上以参数指定的header头和值。
      *
      * 如果指定的header头已存在，其旧有的值不变，新的值添加到旧的值后面。如果header头不存在则新增。
+     * 这个方法不会改变原有实例，而是返回一个包含新值的实例
      *
-     * This method MUST be implemented in such a way as to retain the
-     * immutability of the message, and MUST return an instance that has the
-     * new header and/or value.
-     * 
-     *
-     * @param string $name Case-insensitive header field name to add.
-     * @param string|string[] $value Header value(s).
+     * @param string          $header Header头名称，大小写不敏感
+     * @param string|string[] $value  Header值，可为数组.
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
@@ -203,13 +179,12 @@ trait MessageTrait
         }
         $value = trimItem($value);
         $normalized = strtolower($header);
+        //旧有的实例值不变，所以克隆
         $new = clone $this;
-        if (isset($new->headerNames[$normalized])) {
-            $header = $this->headerNames[$normalized];
-            $new->headers[$header] = array_merge($this->headers[$header], $value);
+        if (isset($new->headers[$normalized])) {
+            $new->headers[$normalized] = array_merge($this->headers[$normalized], $value);
         } else {
-            $new->headerNames[$normalized] = $header;
-            $new->headers[$header] = $value;
+            $new->headers[$normalized] = $value;
         }
         return $new;
     }
@@ -223,18 +198,17 @@ trait MessageTrait
      * immutability of the message, and MUST return an instance that removes
      * the named header.
      *
-     * @param string $name Case-insensitive header field name to remove.
+     * @param string $header Case-insensitive header field name to remove.
      * @return static
      */
     public function withoutHeader($header)
     {
         $normalized = strtolower($header);
-        if (!isset($this->headerNames[$normalized])) {
-            return $this;
-        }
-        $header = $this->headerNames[$normalized];
         $new = clone $this;
-        unset($new->headers[$header], $new->headerNames[$normalized]);
+        if (!isset($this->headers[$normalized])) {
+            return $new;
+        }
+        unset($new->headers[$normalized]);
         return $new;
     }
 
@@ -274,9 +248,14 @@ trait MessageTrait
         return $new;
     }
 
+    /**
+     * 重置所有header头信息
+     *
+     * @param array $headers
+     */
     private function setHeaders(array $headers)
     {
-        $this->headerNames = $this->headers = [];
+        $this->headers = [];
         foreach ($headers as $header => $value) {
             if (!is_array($value)) {
                 $value = [$value];
@@ -284,11 +263,9 @@ trait MessageTrait
             //去掉header值两边的空格
             $value = trimItem($value);
             $normalized = strtolower($header);
-            if (isset($this->headerNames[$normalized])) {
-                $header = $this->headerNames[$normalized];
-                $this->headers[$header] = array_merge($this->headers[$header], $value);
+            if (isset($this->headers[$normalized])) {
+                $this->headers[$normalized] = array_merge($this->headers[$normalized], $value);
             } else {
-                $this->headerNames[$normalized] = $header;
                 $this->headers[$header] = $value;
             }
         }
