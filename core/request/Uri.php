@@ -61,7 +61,8 @@ class Uri implements UriInterface
      */
     public function __construct($uri = '')
     {
-        // weak type check to also accept null until we can add scalar type hints
+        if(!is_string($uri))
+            throw new \InvalidArgumentException("Parameter uri must be a string");
         if ($uri != '') {
             $parts = parse_url($uri);
             if ($parts === false) {
@@ -615,6 +616,20 @@ class Uri implements UriInterface
         if (!is_string($str)) {
             throw new \InvalidArgumentException('Query and fragment must be a string');
         }
+        /**
+         * 1. 正则?:
+         * 用圆括号将所有选择项括起来，相邻的选择项之间用|分隔。
+         * 但用圆括号会有一个副作用，使相关的匹配会被缓存，此时可用?:放在第一个选项前来消除这种副作用。
+         * 例如，对于$str1 = '000aaa111'; $pattern = '/([a-z]+)(\d+)/'; //捕获性分组匹配
+         * 将会返回匹配数组['aaa111','aaa','111']，后两个子串可视为括号的副作用
+         * 将$pattern改为'/(?:[a-z]+)(?:\d+)/'，就只返回['aaa111']
+         * 2. 正则 [^xxx]
+         * 不包含xxx
+         * 3. 正则?!
+         * 反向前瞻，后面不能有什么，例如
+         * str = 'aaa000 aaaa111 aaaaaaa222';partern = /a{3,}(?!000)/g;
+         * 返回结果['aaaa', 'aaaaaaa']，没有匹配aaa000
+         */
         return preg_replace_callback(
             '/(?:[^' . self::$charUnreserved . self::$charSubDelims . '%:@\/\?]++|%(?![A-Fa-f0-9]{2}))/',
             [$this, 'rawurlencodeMatchZero'],
