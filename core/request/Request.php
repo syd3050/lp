@@ -64,8 +64,9 @@ class Request implements RequestInterface
             throw new \InvalidArgumentException("Parameter uri must be an instance of UriInterface");
         $this->method = strtoupper($method);
         $this->uri = $uri;
-        empty($headers) || $this->setHeaders($headers);
+        $this->setHeaders($headers);
         $this->protocol = $version;
+        //如果初始化Header头中没有Host，从Uri中获取host和port并置于Header头数组首位
         if (!$this->hasHeader('Host')) {
             $this->updateHostFromUri();
         }
@@ -75,55 +76,49 @@ class Request implements RequestInterface
     }
 
     /**
-     * Retrieves the message's request target.
+     * 获取request的请求路径，实际上是path+queryString，例如，对于
+     * $url = 'http://username:password@hostname:9090/path?arg=value#anchor';
+     * 将返回'/path?arg=value#anchor'
      *
-     * Retrieves the message's request-target either as it will appear (for
-     * clients), as it appeared at request (for servers), or as it was
-     * specified for the instance (see withRequestTarget()).
-     *
-     * In most cases, this will be the origin-form of the composed URI,
-     * unless a value was provided to the concrete implementation (see
-     * withRequestTarget() below).
-     *
-     * If no URI is available, and no request-target has been specifically
-     * provided, this method MUST return the string "/".
-     *
-     * @return string
+     * @return string 没有返回"/"
      */
     public function getRequestTarget()
     {
         if ($this->requestTarget !== null) {
             return $this->requestTarget;
         }
-        $target = $this->uri->getPath();
-        if ($target == '') {
-            $target = '/';
+        /**
+         * 获得Uri的path,例如，对于
+         * $url = 'http://username:password@hostname:9090/path?arg=value#anchor';
+         * 有 $path = '/path';
+         */
+        $path = $this->uri->getPath();
+        if ($path == '') {
+            $path = '/';
         }
+        /**
+         * 将请求字符串拼接path得到请求路径，例如，对于上述$url，为arg=value#anchor的部分
+         * 这时 $path = '/path?arg=value#anchor';
+         */
         if ($this->uri->getQuery() != '') {
-            $target .= '?' . $this->uri->getQuery();
+            $path .= '?' . $this->uri->getQuery();
         }
-        return $target;
+        return $path;
     }
 
     /**
-     * Return an instance with the specific request-target.
+     * 返回一个新实例，其requestTarget为指定的值
      *
-     * If the request needs a non-origin-form request-target — e.g., for
-     * specifying an absolute-form, authority-form, or asterisk-form —
-     * this method may be used to create an instance with the specified
-     * request-target, verbatim.
-     *
-     * This method MUST be implemented in such a way as to retain the
-     * immutability of the message, and MUST return an instance that has the
-     * changed request target.
-     *
-     * @link http://tools.ietf.org/html/rfc7230#section-5.3 (for the various
-     *     request-target forms allowed in request messages)
+     * @link http://tools.ietf.org/html/rfc7230#section-5.3
      * @param mixed $requestTarget
      * @return static
      */
     public function withRequestTarget($requestTarget)
     {
+        /**
+         * 不允许有空白字符
+         * \s 匹配任何空白字符，包括空格、制表符、换页符等等。等价于 [ \f\n\r\t\v]。
+         */
         if (preg_match('#\s#', $requestTarget)) {
             throw new \InvalidArgumentException(
                 'Invalid request target provided; cannot contain whitespace'
@@ -135,7 +130,6 @@ class Request implements RequestInterface
     }
 
     /**
-     * Retrieves the HTTP method of the request.
      *
      * @return string Returns the request method.
      */
@@ -145,15 +139,7 @@ class Request implements RequestInterface
     }
 
     /**
-     * Return an instance with the provided HTTP method.
-     *
-     * While HTTP method names are typically all uppercase characters, HTTP
-     * method names are case-sensitive and thus implementations SHOULD NOT
-     * modify the given string.
-     *
-     * This method MUST be implemented in such a way as to retain the
-     * immutability of the message, and MUST return an instance that has the
-     * changed request method.
+     * 返回一个新实例，其method为指定的值
      *
      * @param string $method Case-sensitive method.
      * @return static
@@ -167,13 +153,10 @@ class Request implements RequestInterface
     }
 
     /**
-     * Retrieves the URI instance.
-     *
-     * This method MUST return a UriInterface instance.
+     * 返回request相关的URI实例
      *
      * @link http://tools.ietf.org/html/rfc3986#section-4.3
-     * @return UriInterface Returns a UriInterface instance
-     *     representing the URI of the request.
+     * @return UriInterface
      */
     public function getUri()
     {
@@ -181,33 +164,16 @@ class Request implements RequestInterface
     }
 
     /**
-     * Returns an instance with the provided URI.
+     * 返回一个新实例，其uri为参数指定的URI
      *
-     * This method MUST update the Host header of the returned request by
-     * default if the URI contains a host component. If the URI does not
-     * contain a host component, any pre-existing Host header MUST be carried
-     * over to the returned request.
+     * 按照接口要求，本方法必须用参数指定的URI中的host Header头更新新实例的header头，
      *
-     * You can opt-in to preserving the original state of the Host header by
-     * setting `$preserveHost` to `true`. When `$preserveHost` is set to
-     * `true`, this method interacts with the Host header in the following ways:
-     *
-     * - If the Host header is missing or empty, and the new URI contains
-     *   a host component, this method MUST update the Host header in the returned
-     *   request.
-     * - If the Host header is missing or empty, and the new URI does not contain a
-     *   host component, this method MUST NOT update the Host header in the returned
-     *   request.
-     * - If a Host header is present and non-empty, this method MUST NOT update
-     *   the Host header in the returned request.
-     *
-     * This method MUST be implemented in such a way as to retain the
-     * immutability of the message, and MUST return an instance that has the
-     * new UriInterface instance.
+     * 设置$preserveHost为true就不必更新header的host值
+     * 如果指定的URI中不存在host Header，则不必更新
      *
      * @link http://tools.ietf.org/html/rfc3986#section-4.3
-     * @param UriInterface $uri New request URI to use.
-     * @param bool $preserveHost Preserve the original state of the Host header.
+     * @param UriInterface $uri
+     * @param bool $preserveHost 为true就不必更新header的host值。
      * @return static
      */
     public function withUri(UriInterface $uri, $preserveHost = false)
@@ -232,123 +198,8 @@ class Request implements RequestInterface
         if (($port = $this->uri->getPort()) !== null) {
             $host .= ':' . $port;
         }
-        if (isset($this->headerNames['host'])) {
-            $header = $this->headerNames['host'];
-        } else {
-            $header = 'Host';
-            $this->headerNames['host'] = 'Host';
-        }
-        // Ensure Host is the first header.
-        // See: http://tools.ietf.org/html/rfc7230#section-5.4
-        $this->headers = [$header => [$host]] + $this->headers;
-    }
-
-    /**
-     * Creates a Request based on a given URI and configuration.
-     *
-     * The information contained in the URI always take precedence
-     * over the other information (server and parameters).
-     *
-     * @param string  $uri               The URI
-     * @param string  $method            The HTTP method
-     * @param array   $server_parameters The query (GET) or request (POST) parameters
-     *
-     * @return static
-     */
-    public static function create($uri,$method = 'GET', $server_parameters = array())
-    {
-        /**
-         * $uri, $method = 'GET', $parameters = array(), $cookies = array(), $files = array(), $content = null
-         */
-        $server = array_replace(array(
-            'HTTP_ACCEPT'           => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'HTTP_ACCEPT_CHARSET'   => 'ISO-8859-1,utf-8,GB2312;q=0.7,*;q=0.7',
-            'HTTP_ACCEPT_LANGUAGE'  => 'en-us,en;q=0.5',
-            'HTTP_USER_AGENT'       => 'Stone',
-            'HTTP_HOST'             => 'localhost',
-            'REMOTE_ADDR'           => '127.0.0.1',
-            'REQUEST_TIME'          => time(),
-            'SERVER_NAME'           => 'localhost',
-            'SERVER_PORT'           => 80,
-            'SCRIPT_NAME'           => '',
-            'SCRIPT_FILENAME'       => '',
-            'SERVER_PROTOCOL'       => 'HTTP/1.1',
-        ), $server_parameters['server_info']);
-
-        $parameters = isset($server_parameters['parameters']) ? $server_parameters['parameters'] : [];
-
-        $server['PATH_INFO'] = '';
-        $server['REQUEST_METHOD'] = strtoupper($method);
-
-        $components = parse_url($uri);
-        if (isset($components['host'])) {
-            $server['SERVER_NAME'] = $components['host'];
-            $server['HTTP_HOST'] = $components['host'];
-        }
-
-        if (isset($components['scheme'])) {
-            if ('https' === $components['scheme']) {
-                $server['HTTPS'] = 'on';
-                $server['SERVER_PORT'] = 443;
-            } else {
-                unset($server['HTTPS']);
-                $server['SERVER_PORT'] = 80;
-            }
-        }
-
-        if (isset($components['port'])) {
-            $server['SERVER_PORT'] = $components['port'];
-            $server['HTTP_HOST'] .= ':'.$components['port'];
-        }
-
-        if (isset($components['user'])) {
-            $server['PHP_AUTH_USER'] = $components['user'];
-        }
-
-        if (isset($components['pass'])) {
-            $server['PHP_AUTH_PW'] = $components['pass'];
-        }
-
-        if (!isset($components['path'])) {
-            $components['path'] = '/';
-        }
-
-        switch (strtoupper($method)) {
-            case 'POST':
-            case 'PUT':
-            case 'DELETE':
-                if (!isset($server['CONTENT_TYPE'])) {
-                    $server['CONTENT_TYPE'] = 'application/x-www-form-urlencoded';
-                }
-            // no break
-            case 'PATCH':
-                $request = $parameters;
-                $query = array();
-                break;
-            default:
-                $request = array();
-                $query = $parameters;
-                break;
-        }
-
-        $queryString = '';
-        if (isset($components['query'])) {
-            parse_str(html_entity_decode($components['query']), $qs);
-            if ($query) {
-                $query = array_replace($qs, $query);
-                $queryString = http_build_query($query, '', '&');
-            } else {
-                $query = $qs;
-                $queryString = $components['query'];
-            }
-        } elseif ($query) {
-            $queryString = http_build_query($query, '', '&');
-        }
-
-        $server['REQUEST_URI'] = $components['path'].('' !== $queryString ? '?'.$queryString : '');
-        $server['QUERY_STRING'] = $queryString;
-
-        //return self::createFromFactory($query, $request, array(), $cookies, $files, $server, $content);
+        // Host MUST be the first header:http://tools.ietf.org/html/rfc7230#section-5.4
+        $this->headers = ['host' => [$host]] + $this->headers;
     }
 
 }

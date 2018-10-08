@@ -26,7 +26,6 @@ final class RequestFactory implements RequestFactoryInterface
      *     instance based on it.
      *
      * @return RequestInterface
-     * @throws ConfigException
      */
     public function createRequest(string $method, $uri): RequestInterface
     {
