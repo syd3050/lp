@@ -11,7 +11,6 @@ namespace core;
 
 use core\exception\ConfigException;
 use core\exception\ServerException;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class Route
@@ -223,10 +222,10 @@ class Route
         $this->parseRoute();
         $controller = 'app\\controller\\'.$this->controller.'Controller';
         if(!class_exists($controller))
-            throw new ServerException("Controller {$controller} 不存在！ \n");
+            throw new ServerException("Controller {$controller} 不存在！ \n",404);
         $class = new $controller();
         if(!method_exists($class,$this->action))
-            throw new ServerException("$class 中方法 {$this->action} 不存在 !\n");
+            throw new ServerException("$class 中方法 {$this->action} 不存在 !\n",404);
         return call_user_func_array(array($class,$this->action),$this->params);
     }
 
