@@ -22,8 +22,7 @@ class Bootstrap
 
     public function run()
     {
-        $swConfig = empty($this->_config['swoole']) ? [] : $this->_config['swoole'];
-        $server = new Server($swConfig);
+        $server = new Server();
         $server->start();
     }
 }

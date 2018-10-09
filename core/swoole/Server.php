@@ -7,11 +7,10 @@
  */
 namespace core\swoole;
 
+use core\Config;
 use core\exception\ServerException;
-use core\Request;
 use core\request\ServerRequestFactory;
 use core\Route;
-use core\stream\LazyOpenStream;
 
 class Server
 {
@@ -34,6 +33,7 @@ class Server
 
     public function __construct($config=[])
     {
+        $config = array_merge($config,Config::get(Config::CONFIG,'swoole'));
         empty($config) || $this->_config = array_merge($this->_config,$config);
     }
 

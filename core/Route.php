@@ -187,7 +187,6 @@ class Route
             list($this->controller,$this->action) = $route[$c_a];
             return true;
         }
-        //将uri分解,这时候的uri已经不含index.php，因为已经在构造函数中去掉了
         $routes = explode('/',$this->path);
         $first = $routes[0];
         /* 凡是不在快照中的，都即时解析 */

@@ -2,4 +2,7 @@
 vendor/
 log/error/*.*
 dump.rdb
+app/swoole.php
+app/database.php
+app/redis.php
 

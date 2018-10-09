@@ -54,7 +54,37 @@ class Config
         $config = self::_load($section);
         if(empty($key))
             return $config;
+        //为了方便开发，约定：如果本地有$key对应的文件，将直接取该文件内容覆盖
+        $config = array_merge($config,self::getFromTmp($key));
         return self::_parse($config,$key);
+    }
+
+    /**
+     * 为了方便开发，约定：如果本地有$key对应的文件，将直接取该文件内容
+     * 这样将项目下载回来后，只需要在/app下新增对应的本地文件即可覆盖config.php,hook.php,job.php,route.php,sql.php等
+     * 配置文件中对应的配置项，从而不需要直接修改这些文件，然后提交代码前又还原这些文件。
+     * 例如，可以在/app下创建database.php配置文件，其内容可以为：
+     return [
+         'host' => '',
+         'port' => '',
+         'name' => '',
+         'username' => '',
+         'password' => '',
+     ]
+     * 这样框架将直接使用其配置项驱动数据库连接
+     * @param $key
+     * @return array
+     */
+    private static function getFromTmp($key)
+    {
+        if(empty($key))
+            return [];
+        $file = APP_PATH."$key.php";
+        if(file_exists($file))
+        {
+            return [$key => include $file];
+        }
+        return [];
     }
 
     /**
