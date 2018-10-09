@@ -10,6 +10,7 @@ namespace core\swoole;
 use core\Config;
 use core\exception\ServerException;
 use core\request\ServerRequestFactory;
+use core\response\ResponseFactory;
 use core\Route;
 
 class Server
@@ -65,9 +66,19 @@ class Server
             //填充server相关变量
             $this->_build_global($request);
             $this->request = $this->_build_request($request);
-            //路由解析
-            $route = new Route($this->request);
-            $result = $route->dispatch();
+            $response = null;
+            try{
+                //路由解析
+                $route = new Route($this->request);
+                $result = $route->dispatch();
+            }catch (\Exception $exception)
+            {
+                
+            }
+
+
+            //build response
+
 
             //$result = "hello";
             //$response->header("Content-Type", $this->contentType);
@@ -90,6 +101,20 @@ class Server
             ->withQueryParams($_GET)
             ->withParsedBody($_POST)
             ->withUploadedFiles(normalizeFiles($_FILES));
+    }
+
+    private function _build_response($code,$phrase,$header=[],$body = null, $version = '1.1')
+    {
+        $response = (new ResponseFactory())->createResponse($code,$phrase);
+        if ($body !== '' && $body !== null) {
+            $body = stream_for($body);
+        }
+        foreach ($header as $k=>$v)
+        {
+            $response = $response->withHeader($k,$v);
+        }
+        return $response->withBody($body)->withProtocolVersion($version);
+
     }
 
     private function _build_global($request)
