@@ -20,4 +20,9 @@ class UserController extends BaseController
             ['id'=>2,'name'=>'Jim','pwd'=>'rtrtj'],
         ];
     }
+
+    public function login($name,$password)
+    {
+        return ['name'=>$name,'password'=>$password];
+    }
 }

@@ -80,7 +80,7 @@ if(!function_exists('dev_dump'))
     {
         if($GLOBALS[ENV_KEY] == 'dev')
         {
-            var_dump($obj);
+            //var_dump($obj);
         }
     }
 }
@@ -1073,7 +1073,7 @@ if(!function_exists('trimItem'))
     }
 }
 
-if(function_exists('getallheaders_ext'))
+if(!function_exists('getallheaders_ext'))
 {
     function getallheaders_ext()
     {

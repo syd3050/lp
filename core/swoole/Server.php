@@ -50,12 +50,6 @@ class Server
         return [true,null];
     }
 
-    protected function checkRequest($request)
-    {
-        if(strpos(getV($request->server,'request_uri'),'index.php') === false)
-            throw new ServerException('URL必须包含index.php');
-    }
-
     public function start()
     {
         list($r,$err) = $this->checkConfig();
@@ -67,16 +61,13 @@ class Server
         $http->on("start", function ($server) {
             echo "Swoole http server is started at ".$this->_config['host'].":".$this->_config['port']."\n";
         });
-        $http->on("request", function ($request, $response) {
-            /* 校验request */
-            $this->checkRequest($request);
+        $http->on("request", function (\swoole_http_request $request, \swoole_http_response $response) {
             //填充server相关变量
-            $this->_build_server($request);
+            $this->_build_global($request);
             $this->request = $this->_build_request($request);
             //路由解析
             $route = new Route($this->request);
             $result = $route->dispatch();
-
 
             //$result = "hello";
             //$response->header("Content-Type", $this->contentType);
@@ -101,13 +92,16 @@ class Server
             ->withUploadedFiles(normalizeFiles($_FILES));
     }
 
-    private function _build_server($request)
+    private function _build_global($request)
     {
+        /* 获取环境变量以标识当前所属环境，默认为生产环境 */
+        $GLOBALS['env'] = getV($request->header,ENV_KEY,DEFAULT_ENV);
+        //dev_dump(['request->get'=>$request->get]);
         $_GET  = empty($request->get) ? [] : $request->get;
         $_POST = empty($request->post) ? [] : $request->post;
         $_COOKIE = empty($request->cookie) ? [] : $request->cookie;
-        /* 获取环境变量以标识当前所属环境，默认为生产环境 */
-        $GLOBALS['env'] = getV($request->header,ENV_KEY,DEFAULT_ENV);
+        $_FILES = empty($request->files) ? [] : $request->files;
+
         $this->host = getV($request->header,'host');
         $this->contentType = getV($request->header,'accept','text/plain');
         //填充$_SERVER数组

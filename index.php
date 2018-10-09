@@ -14,8 +14,8 @@ defined('DEFAULT_ENV') or define('DEFAULT_ENV','dev');
 defined('DS') or define('DS', DIRECTORY_SEPARATOR);
 defined('ROOT_PATH') or define('ROOT_PATH', dirname(__FILE__) . DS);
 
-/*include "./core/Loader.php";
-\core\Loader::register();*/
+include "./core/Loader.php";
+\core\Loader::register();
 
 require "vendor/autoload.php";
 

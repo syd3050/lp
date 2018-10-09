@@ -12,6 +12,7 @@ namespace core;
 use core\exception\ConfigException;
 use core\exception\ServerException;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 class Route
 {
@@ -21,7 +22,8 @@ class Route
     protected $action;
     protected $config;
     protected $path;
-    protected $method;
+    protected $queryArray;
+    protected $target;
     public $params=[];
     public $route;
     const CAA = 'c-a';
@@ -29,21 +31,43 @@ class Route
 
     /**
      * Route constructor.
-     * @param RequestInterface $request
+     * @param ServerRequestInterface $request
      * @throws ConfigException
      */
     public function __construct($request)
     {
         //必须先加载路由配置文件
         $this->loadConfig();
-        $uri = explode('/',$request->uri);
-        //dev_dump(['construct'=>$uri]);
-        //去掉空元素及index.php
-        while (empty(array_shift($uri)));
-        $this->path = implode('/',$uri);
-        //dev_dump($this->path);
-        $this->method = $request->method;
-
+        $this->queryArray = $request->getQueryParams();
+        $this->target = $request->getRequestTarget();
+        /*
+         * 1.requestTarget为:
+         *      /index.php?r=controller/action&p1=v1&p2=v2
+         *      /controller/action/v1/v2
+         * 的形式
+         * 2.queryParams为
+         * array(3) {
+            ["r"]=>
+            string(8) "controller/action"
+            ["p1"]=>
+            string(3) "v1"
+            ["p2"]=>
+            string(3) "v2"
+          }
+          的形式
+         */
+        if(!isset($this->queryArray['r']))
+        {
+            $target = ltrim($this->target,'/');
+            //没有/时取默认配置
+            if(strpos($target,'/') === FALSE)
+                $this->path = $this->default_controller.'/'.$this->default_action;
+            else
+                $this->path = $target;
+        }else{
+            $this->path = $this->queryArray['r'];
+            unset($this->queryArray['r']);
+        }
     }
 
     protected function loadConfig()
@@ -133,9 +157,14 @@ class Route
     {
         $this->controller = ucwords(array_shift($routes));
         $this->action = array_shift($routes);
-        //剩下的都是参数
-        $this->params = $routes;
-        //dev_dump(['currentParse'=>"{$this->controller},{$this->action}"]);
+        //没有&符号的情况，默认为/user/login/ethan/111111的形式
+        if(empty($this->queryArray))
+        {
+            $this->params = $routes;
+        } else {
+            //为index.php?r=user/login&name=ethan&password=111的形式
+            $this->params = $this->queryArray;
+        }
         return true;
     }
 
@@ -158,13 +187,6 @@ class Route
             list($this->controller,$this->action) = $route[$c_a];
             return true;
         }
-        if(empty($this->path))
-        {
-            $this->controller = $this->default_controller;
-            $this->action = $this->default_action;
-            //var_dump(['uri is empty'=>"{$this->controller},{$this->action}"]);
-            return true;
-        }
         //将uri分解,这时候的uri已经不含index.php，因为已经在构造函数中去掉了
         $routes = explode('/',$this->path);
         $first = $routes[0];
@@ -185,7 +207,7 @@ class Route
                 if (substr($p, 0, 1) == '$') {
                     $index = intval(ltrim($p, '$'));
                     /**
-                     * 取uri对应位置的值作为参数，不支持
+                     * 取uri对应位置的值作为参数，其实只处理uri上带的参数即可，不支持
                      * 'item/abcc(\d+)' => 'Post/view/$1'这样的解析,$1将被替换为abccxx
                      */
                     $this->params[] = $rTmp[$index - 1];
