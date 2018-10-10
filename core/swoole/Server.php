@@ -34,7 +34,8 @@ class Server
 
     public function __construct($config=[])
     {
-        $config = array_merge($config,Config::get(Config::CONFIG,'swoole'));
+        $swoole = Config::get(Config::CONFIG,'swoole') ?: [];
+        $config = array_merge($config,$swoole);
         empty($config) || $this->_config = array_merge($this->_config,$config);
     }
 
@@ -66,7 +67,7 @@ class Server
             //填充server相关变量
             $this->_build_global($request);
             $this->request = $this->_build_request($request);
-            $response = null;
+            $psr_response = null;
             try{
                 //路由解析
                 $route = new Route($this->request);
@@ -76,7 +77,7 @@ class Server
                 
             }
 
-
+            //$sid = session_id();
             //build response
 
 

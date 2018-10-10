@@ -28,8 +28,8 @@ function error_handler($code, $msg, $file, $line) {
     if(DEBUG)
     {
         echo "\n";
-        var_dump(['error'=>$errorArray['msg']]);
-        //var_dump(['error'=>$errorArray,'error_trace'=>$traces]);
+        //var_dump(['error'=>$errorArray['msg']]);
+        var_dump(['error'=>$errorArray,'error_trace'=>$traces]);
     } else
     {
         try{

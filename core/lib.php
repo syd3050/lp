@@ -1184,3 +1184,10 @@ if(!function_exists('normalizeNestedFileSpec'))
     }
 }
 
+if(!function_exists('setHeader'))
+{
+    function setHeader($name,$value)
+    {
+
+    }
+}
