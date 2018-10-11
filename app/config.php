@@ -33,5 +33,14 @@ return [
     ],
 
     //Request类路径
-    //'request' => 'core\\request\\Request',
+    //'request' => 'app\\core\\Request',
+    //Response类路径
+    //'response'=> 'app\\core\\Response',
+    /*
+    Session配置,Session驱动类需要实现SessionDriver接口，且构造函数需要有一个数组参数接受以下的配置信息
+    'session' => [
+        'type'  => '',
+        'class' => 'app\\core\\Sessionxx'
+    ],
+    */
 ];

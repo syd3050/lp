@@ -36,4 +36,16 @@ class YacCache implements LocalCacheDriver
         // TODO: Implement set() method.
         return $this->_yac->set($key, $value);
     }
+
+    public function del($key)
+    {
+        // TODO: Implement clear() method.
+        return $this->_yac->delete($key);
+    }
+
+    public function clear()
+    {
+        // TODO: Implement clear() method.
+        return $this->_yac->flush();
+    }
 }

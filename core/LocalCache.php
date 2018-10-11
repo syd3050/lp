@@ -16,6 +16,8 @@ use core\exception\ServerException;
  *
  * @method mixed get($key,$default='') static
  * @method mixed set($key,$value) static
+ * @method mixed del($key) static
+ * @method mixed clear() static
  *
  * @package core
  */
