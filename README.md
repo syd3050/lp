@@ -28,10 +28,10 @@
      extension = yac.so
     
      yac.enable = 1
+     ##### //大概可以保存10万个key
+     yac.keys_memory_size = 32M
     
-     yac.keys_memory_size = 4M
-    
-     yac.values_memory_size = 64M
+     yac.values_memory_size = 256M
     
      yac.compress_threshold = -1
     
