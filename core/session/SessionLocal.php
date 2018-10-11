@@ -26,7 +26,6 @@ class SessionLocal implements SessionDriver
             $this->session_name = $config['session_name'];
         if(isset($config['max_lifetime']))
             $this->max_lifetime = intval($config['max_lifetime']);
-        //open
     }
 
     public function get($key)
@@ -68,7 +67,13 @@ class SessionLocal implements SessionDriver
     private function getSession_id()
     {
         if(empty($_COOKIE[$this->session_name]))
-            throw new ServerException("Cookie 不存在{$this->session_name}");
+        {
+            while (!empty(LocalCache::get($this->session_name.'-'.($sid = uuid($this->session_name)))))
+            {
+                usleep(100);
+            }
+            return $sid;
+        }
         return $_COOKIE[$this->session_name];
     }
 
