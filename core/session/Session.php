@@ -28,7 +28,8 @@ class Session
                 $class = $config['class'];
                 return self::$_instance = new $class($config);
             }else{
-                return self::$_instance = new SessionLocal();
+                $config = $config ?: [];
+                return self::$_instance = new SessionLocal($config);
             }
         }
         return self::$_instance;

@@ -40,7 +40,13 @@ return [
     Session配置,Session驱动类需要实现SessionDriver接口，且构造函数需要有一个数组参数接受以下的配置信息
     'session' => [
         'type'  => '',
-        'class' => 'app\\core\\Sessionxx'
+        'class' => 'app\\core\\Sessionxx',
+        'session_name'    => 'PHPSESSID',
+        'maxLifetime'     => '7200',  //2 hours
+        //GC 概率 = gc_probability/gc_divisor ，例如以下配置表明每1000次请求有1次机会清理垃圾，
+        //就是将所有“未访问时长”超过maxLifetime的项目清理掉
+        'gc_probability ' => 1,
+        'gc_divisor'      => 1000,
     ],
     */
 ];
