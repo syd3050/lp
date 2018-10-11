@@ -18,11 +18,15 @@ use core\LocalCache;
 class SessionLocal implements SessionDriver
 {
     private $session_name = 'PHPSESSID';
+    private $max_lifetime = 3600;
 
     public function __construct($config=[])
     {
         if(isset($config['session_name']))
             $this->session_name = $config['session_name'];
+        if(isset($config['max_lifetime']))
+            $this->max_lifetime = intval($config['max_lifetime']);
+        //open
     }
 
     public function get($key)
@@ -30,8 +34,13 @@ class SessionLocal implements SessionDriver
         // TODO: Implement get() method.
         $session_id = $this->getSession_id();
         $session = LocalCache::get($this->session_name.'-'.$session_id);
-        $value = isset($session[$key]) ? $session[$key] : null;
-        return $value;
+        //更新访问时间
+        if(isset($session[$key]['data']) && $this->isValid($session[$key]))
+        {
+            $session[$key]['last_visit'] = time();
+            return $session[$key]['data'];
+        }
+        return null;
     }
 
     public function set($key, $value)
@@ -39,8 +48,21 @@ class SessionLocal implements SessionDriver
         // TODO: Implement set() method.
         $session_id = $this->getSession_id();
         $session_data = LocalCache::get($this->session_name.'-'.$session_id);
-        $session_data[$key] = $value;
-        LocalCache::set($this->session_name.'-'.$session_id,$session_data);
+        $session_data[$key] = ['data'=>$value, 'last_visit'=>time()];
+        LocalCache::set($this->session_name.'-'.$session_id, $session_data);
+    }
+
+    private function isValid($cache)
+    {
+        if(isset($cache['last_visit']))
+        {
+            if($this->max_lifetime == -1)
+                return true;
+            if((time()-$cache['last_visit']) > $this->max_lifetime)
+                return false;
+            return true;
+        }
+        return false;
     }
 
     private function getSession_id()

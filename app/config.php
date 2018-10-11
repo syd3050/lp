@@ -42,7 +42,7 @@ return [
         'type'  => '',
         'class' => 'app\\core\\Sessionxx',
         'session_name'    => 'PHPSESSID',
-        'maxLifetime'     => '7200',  //2 hours
+        'max_lifetime'    => '3600',  //1 hours
         //GC 概率 = gc_probability/gc_divisor ，例如以下配置表明每1000次请求有1次机会清理垃圾，
         //就是将所有“未访问时长”超过maxLifetime的项目清理掉
         'gc_probability ' => 1,
