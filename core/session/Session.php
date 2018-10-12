@@ -14,34 +14,41 @@ use core\Config;
 class Session
 {
     /**
-     * @var SessionDriver
+     * @var bool
      */
-    private static $_instance = null;
+    private static $_init = false;
 
     private static function _init()
     {
-        if(empty(self::$_instance))
+        if(!self::$_init)
         {
             $config = Config::get(Config::CONFIG,'session');
+            /**
+             * @var \SessionHandler
+             */
+            $instance = null;
             if(isset($config['class']) && class_exists($config['class']))
             {
                 $class = $config['class'];
-                return self::$_instance = new $class($config);
+                $instance = new $class($config);
             }else{
                 $config = $config ?: [];
-                return self::$_instance = new SessionLocal($config);
+                $instance = new SessionLocal($config);
             }
+            session_set_save_handler($instance);
+            self::$_init = true;
         }
-        return self::$_instance;
+        if(session_status() != PHP_SESSION_ACTIVE)
+            session_start();
     }
 
     public static function get($key)
     {
-        return self::_init()->get($key);
+        return isset($_SESSION[$key]) ? $_SESSION[$key] : null;
     }
 
-    public static function set($key,$name)
+    public static function set($key,$value)
     {
-        return self::_init()->set($key,$name);
+        $_SESSION[$key] = $value;
     }
 }

@@ -15,7 +15,7 @@ use core\LocalCache;
  * 基于本地缓存的session
  * @package core\session
  */
-class SessionLocal implements SessionDriver
+class SessionLocal extends \SessionHandler
 {
     private $session_name = 'PHPSESSID';
     private $max_lifetime = 3600;
@@ -95,9 +95,5 @@ class SessionLocal implements SessionDriver
         LocalCache::del($this->session_name.'-'.$session_id);
     }
 
-    public function gc(int $maxLifetime)
-    {
-        // TODO: Implement gc() method.
-    }
 
 }
