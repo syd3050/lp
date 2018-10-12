@@ -39,4 +39,9 @@ class Session
     {
         return self::_init()->get($key);
     }
+
+    public static function set($key,$name)
+    {
+        return self::_init()->set($key,$name);
+    }
 }

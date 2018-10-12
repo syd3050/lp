@@ -12,6 +12,7 @@ use core\exception\ServerException;
 use core\request\ServerRequestFactory;
 use core\response\ResponseFactory;
 use core\Route;
+use core\session\Session;
 
 class Server
 {
@@ -74,17 +75,17 @@ class Server
                 $result = $route->dispatch();
             }catch (\Exception $exception)
             {
-                
+                $result = $exception->getMessage();
+                $response->status($exception->getCode());
             }
-
-            //$sid = session_id();
-            //build response
-
 
             //$result = "hello";
             //$response->header("Content-Type", $this->contentType);
-            $response->header("Content-Type", "text/plain");
-            $response->end(json_encode($result)."\n");
+            //var_dump('cookie:'.json_encode($_COOKIE));
+            if(!isset($_COOKIE['PHPSESSID']))
+                $response->header("Set-Cookie", "PHPSESSID=".session_id().';path=/');
+            $response->header("Content-Type", "text/plain;charset=UTF-8");
+            $response->end($result."\n");
         });
 
         $http->start();
@@ -124,6 +125,7 @@ class Server
         $GLOBALS['env'] = getV($request->header,ENV_KEY,DEFAULT_ENV);
         //dev_dump(['request->get'=>$request->get]);
         $_GET  = empty($request->get) ? [] : $request->get;
+        $_GET = ['query'=>getV($request->server,'query_string')];
         $_POST = empty($request->post) ? [] : $request->post;
         $_COOKIE = empty($request->cookie) ? [] : $request->cookie;
         $_FILES = empty($request->files) ? [] : $request->files;
