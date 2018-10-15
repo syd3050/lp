@@ -65,6 +65,13 @@ class Server
             echo "Swoole http server is started at ".$this->_config['host'].":".$this->_config['port']."\n";
         });
         $http->on("request", function (\swoole_http_request $request, \swoole_http_response $response) {
+            if(getV($request->server,'request_uri') == '/favicon.ico')
+            {
+                $response->header("Content-Type", "text/plain;charset=UTF-8");
+                $response->end("");
+                return;
+            }
+
             //填充server相关变量
             $this->_build_global($request);
             $this->request = $this->_build_request($request);
@@ -131,7 +138,7 @@ class Server
         $GLOBALS['env'] = getV($request->header,ENV_KEY,DEFAULT_ENV);
         //dev_dump(['request->get'=>$request->get]);
         $_GET  = empty($request->get) ? [] : $request->get;
-        //$_GET = ['query'=>getV($request->server,'query_string')];
+        $_GET = ['query'=>getV($request->server,'query_string')];
         $_POST = empty($request->post) ? [] : $request->post;
         $_COOKIE = empty($request->cookie) ? [] : $request->cookie;
         $_FILES = empty($request->files) ? [] : $request->files;
