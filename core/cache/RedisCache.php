@@ -23,11 +23,7 @@ namespace core\cache;
  */
 class RedisCache implements CacheDriver
 {
-    private static $_config = [
-        'host'     => '127.0.0.1',
-        'port'     => '6379',
-        'password' => ''
-    ];
+
     /**
      * @var null|\Swoole\Coroutine\Redis
      */
@@ -37,12 +33,7 @@ class RedisCache implements CacheDriver
     {
         if(empty(self::$_redis))
         {
-            self::$_config = array_merge(self::$_config, $config);
-            if(class_exists("\\Swoole\\Coroutine\\Redis"))
-                self::$_redis = new \Swoole\Coroutine\Redis();
-            else
-                self::$_redis = new \Redis();
-            self::$_redis->connect(self::$_config['host'], self::$_config['port']);
+            self::$_redis = new RedisDecorator($config);
         }
     }
 

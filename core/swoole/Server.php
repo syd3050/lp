@@ -69,6 +69,7 @@ class Server
             $this->_build_global($request);
             $this->request = $this->_build_request($request);
             $psr_response = null;
+            //Session::start();
             try{
                 //路由解析
                 $route = new Route($this->request);
@@ -82,10 +83,15 @@ class Server
             //$result = "hello";
             //$response->header("Content-Type", $this->contentType);
             //var_dump('cookie:'.json_encode($_COOKIE));
-            if(!isset($_COOKIE['PHPSESSID']))
-                $response->header("Set-Cookie", "PHPSESSID=".session_id().';path=/');
+            if(!isset($_COOKIE['PHPSESSID'])){
+                $response->header("Set-Cookie", "PHPSESSID=".Session::session_id());
+                $response->header("has-id","nonono");
+            } else {
+                $response->header("Set-Cookie", "PHPSESSID=".$_COOKIE['PHPSESSID'].';path=/');
+                $response->header("has-id",$_COOKIE['PHPSESSID']);
+            }
             $response->header("Content-Type", "text/plain;charset=UTF-8");
-            $response->end($result."\n");
+            $response->end(json_encode($result)."\n");
         });
 
         $http->start();
@@ -125,7 +131,7 @@ class Server
         $GLOBALS['env'] = getV($request->header,ENV_KEY,DEFAULT_ENV);
         //dev_dump(['request->get'=>$request->get]);
         $_GET  = empty($request->get) ? [] : $request->get;
-        $_GET = ['query'=>getV($request->server,'query_string')];
+        //$_GET = ['query'=>getV($request->server,'query_string')];
         $_POST = empty($request->post) ? [] : $request->post;
         $_COOKIE = empty($request->cookie) ? [] : $request->cookie;
         $_FILES = empty($request->files) ? [] : $request->files;

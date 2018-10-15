@@ -10,6 +10,8 @@ namespace core\session;
 
 
 use core\Config;
+use core\exception\ConfigException;
+use core\Util;
 
 class Session
 {
@@ -17,38 +19,66 @@ class Session
      * @var bool
      */
     private static $_init = false;
+    /**
+     * @var \SessionHandler
+     */
+    private static $_instance = null;
 
     private static function _init()
     {
-        if(!self::$_init)
+        /*
+        if(empty(self::$_instance))
         {
             $config = Config::get(Config::CONFIG,'session');
-            /**
-             * @var \SessionHandler
-             */
-            $instance = null;
             if(isset($config['class']) && class_exists($config['class']))
             {
                 $class = $config['class'];
-                $instance = new $class($config);
-            }else{
-                $config = $config ?: [];
-                $instance = new SessionLocal($config);
+                self::$_instance = new $class($config);
             }
-            session_set_save_handler($instance);
+            if(self::$_instance != null)
+                session_set_save_handler(self::$_instance);
+        }
+        */
+        if(!self::$_init)
+        {
+            self::$_instance = new SessionRedis();
+            $connected = self::$_instance->open('','');
+            if(!$connected)
+                throw new ConfigException("Can not connect redis,check the configuration please");
+            self::session_id();
             self::$_init = true;
         }
-        if(session_status() != PHP_SESSION_ACTIVE)
-            session_start();
+
     }
+
+    public static function session_id()
+    {
+        if(!isset($_COOKIE['PHPSESSID']))
+        {
+            $_COOKIE['PHPSESSID'] = randStr('session_',26);
+        }
+        return $_COOKIE['PHPSESSID'];
+    }
+
+
 
     public static function get($key)
     {
-        return isset($_SESSION[$key]) ? $_SESSION[$key] : null;
+        if(!self::$_init)
+            self::_init();
+        $session = self::$_instance->read(self::session_id())?:'';
+        $session = json_decode($session,true);
+        $r = isset($session[$key]) ? $session[$key] : null;
+        return $r;
     }
 
     public static function set($key,$value)
     {
-        $_SESSION[$key] = $value;
+        if(!self::$_init)
+            self::_init();
+        $session = self::$_instance->read(self::session_id())?:'';
+        $session = json_decode($session,true);
+        $session[$key] = $value;
+        return self::$_instance->write(self::session_id(),json_encode($session));
     }
 }

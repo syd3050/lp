@@ -9,6 +9,7 @@
 namespace core\session;
 
 
+use core\cache\RedisDecorator;
 use core\exception\ConfigException;
 
 class SessionRedis extends \SessionHandler
@@ -24,11 +25,10 @@ class SessionRedis extends \SessionHandler
         'password'     => '',
         'select'       => 0,
         'expire'       => 3600, // 有效期(秒)
-        'persistent'   => true, // 是否长连接
-        'prefix'       => '',
+        'persistent'   => false, // 是否长连接
     ];
 
-    public function __construct(array $config)
+    public function __construct(array $config=[])
     {
         $this->config = array_merge($this->config, $config);
     }
@@ -42,20 +42,12 @@ class SessionRedis extends \SessionHandler
      */
     public function open($savePath, $session_name)
     {
-        if (extension_loaded('redis')) {
-            $this->handler = new \Redis;
-            $connect = $this->config['persistent'] ? 'pconnect' : 'connect';
-            $this->handler->$connect($this->config['host'], $this->config['port'], $this->config['timeout']);
-            if ('' != $this->config['password']) {
-                $this->handler->auth($this->config['password']);
-            }
-            if (0 != $this->config['select']) {
-                $this->handler->select($this->config['select']);
-            }
-        } else {
-            throw new ConfigException('Redis should be installed.');
-        }
-        return true;
+        $redis_config = $this->config;
+        unset($redis_config['expire']);
+        //$this->handler = new RedisDecorator($redis_config);
+        $this->handler = new \Redis();
+        $r = $this->handler->connect($redis_config['host'],$redis_config['port']);
+        return $r;
     }
 
     /**
@@ -78,7 +70,7 @@ class SessionRedis extends \SessionHandler
      */
     public function read($session_id)
     {
-        return (string) $this->handler->get($this->config['prefix'] . $session_id);
+        return (string) $this->handler->get($session_id);
     }
 
     /**
@@ -91,9 +83,9 @@ class SessionRedis extends \SessionHandler
     public function write($session_id, $session_data)
     {
         if ($this->config['expire'] > 0) {
-            $result = $this->handler->setex($this->config['prefix'] . $session_id, $this->config['expire'], $session_data);
+            $result = $this->handler->setex($session_id, $this->config['expire'], $session_data);
         } else {
-            $result = $this->handler->set($this->config['prefix'] . $session_id, $session_data);
+            $result = $this->handler->set($session_id, $session_data);
         }
         return $result ? true : false;
     }
@@ -105,7 +97,7 @@ class SessionRedis extends \SessionHandler
      */
     public function destroy($session_id)
     {
-        return $this->handler->delete($this->config['prefix'] . $session_id) > 0;
+        return $this->handler->delete($session_id) > 0;
     }
 
     /**
