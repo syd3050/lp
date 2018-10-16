@@ -11,7 +11,6 @@ namespace core\session;
 
 use core\Config;
 use core\exception\ConfigException;
-use core\Util;
 
 class Session
 {
