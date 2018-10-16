@@ -76,7 +76,7 @@ class Server
             $this->_build_global($request);
             $this->request = $this->_build_request($request);
             $psr_response = null;
-            //Session::start();
+
             try{
                 //路由解析
                 $route = new Route($this->request);

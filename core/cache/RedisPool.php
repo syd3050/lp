@@ -82,7 +82,13 @@ final class RedisPool
         } else
             throw new ConfigException('Redis should be installed.');
         if($connected)
+        {
+            if (!empty($this->config['password']))
+                $redis->auth($this->config['password']);
+            if (!empty($this->config['select']))
+                $redis->select($this->config['select']);
             return $redis;
+        }
         return null;
     }
 
