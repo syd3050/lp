@@ -20,12 +20,13 @@ final class RedisPool
      */
     protected $pool;
     protected $config = array(
-        'host'     => '127.0.0.1',
-        'port'     => '6379',
-        'password' => '',
-        'timeout'  => 0,
-        'max'      => 512,  //最多512个连接
-        'init'     => 8     //初始化建立8个连接
+        'host'       => '127.0.0.1',
+        'port'       => '6379',
+        'password'   => '',
+        'timeout'    => 0,
+        'persistent' => 1,
+        'max'        => 512,  //最多512个连接
+        'init'       => 8     //初始化建立8个连接
     );
     protected $lock;
     protected $lock_key = "stone_lock";
@@ -65,7 +66,7 @@ final class RedisPool
             $times++;
         }
         if($nums != 0)
-            throw new ServerException("Redis 连接失败！");
+            throw new ServerException("Can not connect redis.");
     }
 
     private function _getConnection()
