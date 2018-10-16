@@ -29,10 +29,6 @@ class RedisDecorator
     public function __construct($config = [])
     {
         $config = array_merge(self::$_config, $config);
-        $this->_redis = new \Redis();
-        $connect = empty($config['persistent']) ? 'connect' : 'pconnect';
-        $connected = $this->_redis->$connect($config['host'], $config['port'], $config['timeout']);
-/*
         if(class_exists("\\Swoole\\Coroutine\\Redis")) {
             $this->_redis = new \Swoole\Coroutine\Redis();
             $connected = $this->_redis->connect($config['host'], $config['port'],$config['timeout']);
@@ -42,7 +38,7 @@ class RedisDecorator
             $connected = $this->_redis->$connect($config['host'], $config['port'], $config['timeout']);
         } else
             throw new ConfigException('Redis should be installed.');
-*/
+
         if(!$connected)
             throw new ConfigException('Failed to connect to Redis !');
         if (!empty($config['password']))

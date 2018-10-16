@@ -44,10 +44,8 @@ class SessionRedis extends \SessionHandler
     {
         $redis_config = $this->config;
         unset($redis_config['expire']);
-        //$this->handler = new RedisDecorator($redis_config);
-        $this->handler = new \Redis();
-        $r = $this->handler->connect($redis_config['host'],$redis_config['port']);
-        return $r;
+        $this->handler = new RedisDecorator($redis_config);
+        return true;
     }
 
     /**
