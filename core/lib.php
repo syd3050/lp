@@ -885,15 +885,15 @@ if(!function_exists('_parse_message'))
         list($startLine, $rawHeaders) = $headerParts;
         if (preg_match("/(?:^HTTP\/|^[A-Z]+ \S+ HTTP\/)(\d+(?:\.\d+)?)/i", $startLine, $matches) && $matches[1] === '1.0') {
             // Header folding is deprecated for HTTP/1.1, but allowed in HTTP/1.0
-            $rawHeaders = preg_replace(\core\Util::RFC7230_HEADER_FOLD_REGEX, ' ', $rawHeaders);
+            $rawHeaders = preg_replace(\core\utils\Util::RFC7230_HEADER_FOLD_REGEX, ' ', $rawHeaders);
         }
         /** @var array[] $headerLines */
-        $count = preg_match_all(\core\Util::RFC7230_HEADER_REGEX, $rawHeaders, $headerLines, PREG_SET_ORDER);
+        $count = preg_match_all(\core\utils\Util::RFC7230_HEADER_REGEX, $rawHeaders, $headerLines, PREG_SET_ORDER);
         // If these aren't the same, then one line didn't match and there's an invalid header.
         if ($count !== substr_count($rawHeaders, "\n")) {
             // Folding is deprecated, see https://tools.ietf.org/html/rfc7230#section-3.2.4
 
-            if (preg_match(\core\Util::RFC7230_HEADER_FOLD_REGEX, $rawHeaders)) {
+            if (preg_match(\core\utils\Util::RFC7230_HEADER_FOLD_REGEX, $rawHeaders)) {
                 throw new \InvalidArgumentException('Invalid header syntax: Obsolete line folding');
             }
             throw new \InvalidArgumentException('Invalid header syntax');

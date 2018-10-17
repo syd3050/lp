@@ -17,16 +17,79 @@ use core\LocalCache;
  */
 class SessionLocal extends \SessionHandler
 {
-    private $session_name = 'PHPSESSID';
-    private $max_lifetime = 3600;
+    //1 hours
+    const MAX_LIFETIME = 3600;
 
-    public function __construct($config=[])
+    protected static $session_config = [
+        'session_name'    => 'PHPSESSID',
+        'max_lifetime'    => self::MAX_LIFETIME,
+        //GC 概率 = gc_probability/gc_divisor ，例如以下配置表明每1000次请求有1次机会清理垃圾，
+        //就是将所有“未访问时长”超过maxLifetime的项目清理掉
+        'gc_probability ' => 1,
+        'gc_divisor'      => 1000,
+    ];
+
+    /**
+     *
+     * @param  string $savePath
+     * @param  mixed  $session_name
+     * @return bool
+     */
+    public function open($savePath, $session_name)
     {
-        if(isset($config['session_name']))
-            $this->session_name = $config['session_name'];
-        if(isset($config['max_lifetime']))
-            $this->max_lifetime = intval($config['max_lifetime']);
+        return true;
     }
+
+    /**
+     * 读取Session
+     * @access public
+     * @param  string $session_id
+     * @return string
+     */
+    public function read($session_id)
+    {
+
+    }
+
+    /**
+     * 写入Session
+     * @access public
+     * @param  string $session_id
+     * @param  string $session_data
+     * @return bool
+     */
+    public function write($session_id, $session_data)
+    {
+        $result = $this->handler->setex(
+            $session_id,
+            self::$session_config['max_lifetime'],
+            $session_data
+        );
+        return $result ? true : false;
+    }
+
+    /**
+     * 删除Session
+     * @param  string $session_id
+     * @return bool
+     */
+    public function destroy($session_id)
+    {
+        return $this->handler->delete($session_id) > 0;
+    }
+
+    /**
+     * Session 垃圾回收
+     * 使用的是redis的setex过期机制维护，不需要垃圾回收
+     * @param  string $maxlifetime
+     * @return bool
+     */
+    public function gc($maxlifetime)
+    {
+        return true;
+    }
+
+
 
     public function get($key)
     {

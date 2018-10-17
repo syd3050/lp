@@ -6,7 +6,7 @@
  * Time: 上午11:13
  */
 
-namespace core;
+namespace core\utils;
 
 
 class Util
