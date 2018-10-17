@@ -136,9 +136,7 @@ class Server
     {
         /* 获取环境变量以标识当前所属环境，默认为生产环境 */
         $GLOBALS['env'] = getV($request->header,ENV_KEY,DEFAULT_ENV);
-        //dev_dump(['request->get'=>$request->get]);
         $_GET  = empty($request->get) ? [] : $request->get;
-        $_GET = ['query'=>getV($request->server,'query_string')];
         $_POST = empty($request->post) ? [] : $request->post;
         $_COOKIE = empty($request->cookie) ? [] : $request->cookie;
         $_FILES = empty($request->files) ? [] : $request->files;
