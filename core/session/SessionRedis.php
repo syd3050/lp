@@ -16,10 +16,12 @@ class SessionRedis extends \SessionHandler
      * @var \Redis
      */
     protected $handler = null;
+    //1 hours
+    const MAX_LIFETIME = 3600;
 
     protected $session_config = [
         'session_name'    => 'PHPSESSID',
-        'max_lifetime'    => '3600',  //1 hours
+        'max_lifetime'    => self::MAX_LIFETIME,
         //GC 概率 = gc_probability/gc_divisor ，例如以下配置表明每1000次请求有1次机会清理垃圾，
         //就是将所有“未访问时长”超过maxLifetime的项目清理掉
         'gc_probability ' => 1,
@@ -31,7 +33,6 @@ class SessionRedis extends \SessionHandler
         'port'         => 6379,
         'password'     => '',
         'select'       => 0,
-        'expire'       => 3600, // key有效期(秒)
         'persistent'   => true, // 是否长连接
     ];
 
@@ -41,6 +42,8 @@ class SessionRedis extends \SessionHandler
         $session_config = isset($config['session']) ? $config['session'] : [];
         $this->redis_config = array_merge($this->redis_config, $redis_config);
         $this->session_config = array_merge($this->session_config, $session_config);
+        if($this->session_config['max_lifetime'] <= 0 )
+            $this->session_config['max_lifetime'] = self::MAX_LIFETIME;
     }
 
     /**
@@ -77,7 +80,13 @@ class SessionRedis extends \SessionHandler
      */
     public function read($session_id)
     {
-        return (string) $this->handler->get($session_id);
+        $data = (string) $this->handler->get($session_id);
+        if(!empty($data))
+        {
+            //重置过期时间，使用这个机制实现自动垃圾回收，只要在过期前有访问，就会重置过期时间
+            $this->handler->setex($session_id,$this->session_config['max_lifetime'],$data);
+        }
+        return $data;
     }
 
     /**
@@ -89,11 +98,11 @@ class SessionRedis extends \SessionHandler
      */
     public function write($session_id, $session_data)
     {
-        if ($this->redis_config['expire'] > 0) {
-            $result = $this->handler->setex($session_id, $this->redis_config['expire'], $session_data);
-        } else {
-            $result = $this->handler->set($session_id, $session_data);
-        }
+        $result = $this->handler->setex(
+            $session_id,
+            $this->session_config['max_lifetime'],
+            $session_data
+        );
         return $result ? true : false;
     }
 
@@ -109,6 +118,7 @@ class SessionRedis extends \SessionHandler
 
     /**
      * Session 垃圾回收
+     * 使用的是redis的setex过期机制维护，不需要垃圾回收
      * @param  string $maxlifetime
      * @return bool
      */
