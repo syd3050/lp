@@ -14,12 +14,17 @@ use core\exception\ServerException;
 
 final class RedisPool
 {
-    private static $instance = null;
     /**
      * @var \SplQueue
      */
     protected $pool;
-    protected $config = array(
+    /**
+     * @var array 保存多个池实例
+     */
+    protected static $pool_array = array();
+    protected $pool_config = array();
+
+    protected static $default_config = array(
         'host'       => '127.0.0.1',
         'port'       => '6379',
         'password'   => '',
@@ -35,37 +40,40 @@ final class RedisPool
 
     public static function getInstance($config = array())
     {
-        if(self::$instance == null)
-            self::$instance = new RedisPool($config);
-        return self::$instance;
+        if(!isset($config['host']) || !isset($config['port']))
+            $config = self::$default_config;
+        $pool_key = $config['host'].':'.$config['port'];
+        if(isset(self::$pool_array[$pool_key]))
+            return self::$pool_array[$pool_key];
+        return self::$pool_array[$pool_key] = new RedisPool($config);
     }
 
     private function __clone(){}
 
     private function __construct($config = array())
     {
-        $this->config = array_merge($this->config,$config);
         $this->pool = new \SplQueue();
+        $this->pool_config = array_merge(self::$default_config,$config);
         $this->lock = $this->_getConnection();
         $this->_init_pool();
     }
 
     private function _init_pool()
     {
-        $nums = $this->config['init'];
+        $n = $this->pool_config['init'];
         $max = 100;
         $times = 0;
-        while ($nums && $times<$max)
+        while ($n && $times<$max)
         {
             $redis = $this->_getConnection();
             if($redis != null)
             {
                 $this->put($redis);
-                $nums--;
+                $n--;
             }
             $times++;
         }
-        if($nums != 0)
+        if($n != 0)
             throw new ServerException("Can not connect redis.");
     }
 
@@ -73,20 +81,20 @@ final class RedisPool
     {
         if (extension_loaded('redis')) {
             $redis = new \Redis();
-            $connect = empty($this->config['persistent']) ? 'connect' : 'pconnect';
+            $connect = empty($this->pool_config['persistent']) ? 'connect' : 'pconnect';
             $connected = $redis->$connect(
-                $this->config['host'],
-                $this->config['port'],
-                $this->config['timeout']
+                $this->pool_config['host'],
+                $this->pool_config['port'],
+                $this->pool_config['timeout']
             );
         } else
             throw new ConfigException('Redis should be installed.');
         if($connected)
         {
-            if (!empty($this->config['password']))
-                $redis->auth($this->config['password']);
-            if (!empty($this->config['select']))
-                $redis->select($this->config['select']);
+            if (!empty($this->pool_config['password']))
+                $redis->auth($this->pool_config['password']);
+            if (!empty($this->pool_config['select']))
+                $redis->select($this->pool_config['select']);
             return $redis;
         }
         return null;
@@ -114,23 +122,23 @@ final class RedisPool
             if($redis->ping() !== '+PONG')
             {
                 $redis->connect(
-                    $this->config['host'],
-                    $this->config['port'],
-                    $this->config['timeout']
+                    $this->pool_config['host'],
+                    $this->pool_config['port'],
+                    $this->pool_config['timeout']
                 );
             }
             return $redis;
         }catch (\Exception $exception)
         {
-            if($this->busy == $this->config['max'])
+            if($this->busy == $this->pool_config['max'])
                 throw new ServerException("Redis 连接数已达上限！");
             //无空闲连接，创建新连接
-            $redis = $this->_getConnection();
             $random = randStr($this->lock_key,10);
             while (true) {
                 if($this->_lock($random))
                     break;
             }
+            $redis = $this->_getConnection();
             $this->busy++;
             $this->_unlock($random);
             return $redis;

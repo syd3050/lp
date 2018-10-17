@@ -8,35 +8,44 @@
 
 namespace core\session;
 
-
 use core\Config;
-use core\exception\ConfigException;
 
 class Session
 {
+    private static $_instance = null;
+    private static $_session_name = 'PHPSESSID';
+    private static $_save_path = '';
+
     /**
      * @return \SessionHandler
-     * @throws ConfigException
      */
     private static function _init()
     {
-        $config = Config::get(Config::CONFIG,'session');
-        if(isset($config['class']) && class_exists($config['class'])) {
-            $class = $config['class'];
-            $instance = new $class($config);
-        }else{
-            $instance = new SessionRedis();
+        if(self::$_instance == null)
+        {
+            $config = Config::get(Config::CONFIG,'session');
+            if(isset($config['session_name']))
+                self::$_session_name = $config['session_name'];
+            if(isset($config['save_path']))
+                self::$_save_path = $config['save_path'];
+            if(isset($config['class']) && class_exists($config['class'])) {
+                $class = $config['class'];
+                self::$_instance = new $class();
+            }else{
+                self::$_instance = new SessionRedis();
+            }
+            self::$_instance->open(self::$_save_path,self::$_session_name);
         }
-        $instance->open('','');
-        self::session_id();
-        return $instance;
+        return self::$_instance;
     }
 
     public static function session_id()
     {
-        if(!isset($_COOKIE['PHPSESSID']))
+        $config = Config::get(Config::CONFIG,'session');
+        $session_name = isset($config['session_name']) ? $config['session_name'] : 'PHPSESSID';
+        if(!isset($_COOKIE[$config['session_name']]))
         {
-            $_COOKIE['PHPSESSID'] = randStr('session_',26);
+            $_COOKIE[''] = randStr('session_',26);
         }
         return $_COOKIE['PHPSESSID'];
     }

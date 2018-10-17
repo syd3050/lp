@@ -37,26 +37,16 @@ return [
     //Response类路径
     //'response'=> 'app\\core\\Response',
     /*
-    Session配置,Session驱动类需要实现SessionDriver接口，且构造函数需要有一个数组参数接受以下的配置信息
+    Session配置
     'session' => [
         'type'  => '',
+        //需要继承SessionHandler类
         'class' => 'app\\core\\Sessionxx',
+        //配置session放置的位置，可配redis,mysql,文件路径等，例如需要单独配置redis：
+        //'save_path'=>['host'=>'','port'=>'','password'=>'']
+        //如果没有上述配置，将使用'class'指向的类中的默认配置，如果类中没有对应配置，将使用本文件中的对应配置
+        'save_path'       => '',
         'session_name'    => 'PHPSESSID',
-        'max_lifetime'    => '3600',  //1 hours
-        //GC 概率 = gc_probability/gc_divisor ，例如以下配置表明每1000次请求有1次机会清理垃圾，
-        //就是将所有“未访问时长”超过maxLifetime的项目清理掉
-        'gc_probability ' => 1,
-        'gc_divisor'      => 1000,
     ],
     */
-    'session' => [
-        'type'  => '',
-        'class' => 'core\\session\\SessionRedis',
-        'session_name'    => 'PHPSESSID',
-        'max_lifetime'    => '3600',  //1 hours
-        //GC 概率 = gc_probability/gc_divisor ，例如以下配置表明每1000次请求有1次机会清理垃圾，
-        //就是将所有“未访问时长”超过maxLifetime的项目清理掉
-        'gc_probability ' => 1,
-        'gc_divisor'      => 1000,
-    ],
 ];

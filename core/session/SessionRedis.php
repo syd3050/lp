@@ -9,6 +9,7 @@
 namespace core\session;
 
 use core\cache\RedisDecorator;
+use core\Config;
 
 class SessionRedis extends \SessionHandler
 {
@@ -19,7 +20,7 @@ class SessionRedis extends \SessionHandler
     //1 hours
     const MAX_LIFETIME = 3600;
 
-    protected $session_config = [
+    protected static $session_config = [
         'session_name'    => 'PHPSESSID',
         'max_lifetime'    => self::MAX_LIFETIME,
         //GC 概率 = gc_probability/gc_divisor ，例如以下配置表明每1000次请求有1次机会清理垃圾，
@@ -28,23 +29,7 @@ class SessionRedis extends \SessionHandler
         'gc_divisor'      => 1000,
     ];
 
-    protected $redis_config  = [
-        'host'         => '127.0.0.1',
-        'port'         => 6379,
-        'password'     => '',
-        'select'       => 0,
-        'persistent'   => true, // 是否长连接
-    ];
-
-    public function __construct(array $config=[])
-    {
-        $redis_config = isset($config['redis']) ? $config['redis'] : [];
-        $session_config = isset($config['session']) ? $config['session'] : [];
-        $this->redis_config = array_merge($this->redis_config, $redis_config);
-        $this->session_config = array_merge($this->session_config, $session_config);
-        if($this->session_config['max_lifetime'] <= 0 )
-            $this->session_config['max_lifetime'] = self::MAX_LIFETIME;
-    }
+    protected static $redis_config  = [];
 
     /**
      *
@@ -54,9 +39,13 @@ class SessionRedis extends \SessionHandler
      */
     public function open($savePath, $session_name)
     {
-        $redis_config = $this->redis_config;
-        unset($redis_config['expire']);
-        $this->handler = new RedisDecorator($redis_config);
+        if(is_array($savePath) && isset($savePath['host']) && isset($savePath['port'])) {
+            self::$redis_config = $savePath;
+        }else{
+            self::$redis_config = Config::get(Config::CONFIG,'redis');
+        }
+        self::$session_config['session_name'] = $session_name;
+        $this->handler = new RedisDecorator(self::$redis_config);
         return true;
     }
 
@@ -66,7 +55,6 @@ class SessionRedis extends \SessionHandler
      */
     public function close()
     {
-        $this->gc($this->session_config['max_lifetime']);
         $this->handler->close();
         $this->handler = null;
         return true;
@@ -84,7 +72,7 @@ class SessionRedis extends \SessionHandler
         if(!empty($data))
         {
             //重置过期时间，使用这个机制实现自动垃圾回收，只要在过期前有访问，就会重置过期时间
-            $this->handler->setex($session_id,$this->session_config['max_lifetime'],$data);
+            $this->handler->setex($session_id,self::$session_config['max_lifetime'],$data);
         }
         return $data;
     }
@@ -100,7 +88,7 @@ class SessionRedis extends \SessionHandler
     {
         $result = $this->handler->setex(
             $session_id,
-            $this->session_config['max_lifetime'],
+            self::$session_config['max_lifetime'],
             $session_data
         );
         return $result ? true : false;
