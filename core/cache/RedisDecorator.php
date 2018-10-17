@@ -37,8 +37,11 @@ class RedisDecorator
 
     public function close()
     {
-        $this->_pool->put($this->_redis);
-        $this->_redis = null;
+        if($this->_redis != null)
+        {
+            $this->_pool->put($this->_redis);
+            $this->_redis = null;
+        }
     }
 
     private function _get_redis()

@@ -43,11 +43,11 @@ class Session
     {
         $config = Config::get(Config::CONFIG,'session');
         $session_name = isset($config['session_name']) ? $config['session_name'] : 'PHPSESSID';
-        if(!isset($_COOKIE[$config['session_name']]))
+        if(!isset($_COOKIE[$session_name]))
         {
-            $_COOKIE[''] = randStr('session_',26);
+            $_COOKIE[$session_name] = randStr('session_',26);
         }
-        return $_COOKIE['PHPSESSID'];
+        return $_COOKIE[$session_name];
     }
 
     public static function get($key)
@@ -64,5 +64,27 @@ class Session
         $session = json_decode($session,true);
         $session[$key] = $value;
         return self::_init()->write(self::session_id(),json_encode($session));
+    }
+
+    public static function del($key)
+    {
+        $session = self::_init()->read(self::session_id())?:'';
+        $session = json_decode($session,true);
+        unset($session[$key]);
+        return self::_init()->write(self::session_id(),json_encode($session));
+    }
+
+    /**
+     * 删除本次会话
+     * @return bool
+     */
+    public static function destroy()
+    {
+        return self::_init()->destroy(self::session_id());
+    }
+
+    public static function close()
+    {
+        return self::_init()->close();
     }
 }
