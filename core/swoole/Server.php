@@ -20,7 +20,7 @@ class Server
     public $contentType;
     public $request;
     /**
-     * @var int 记录已经处理的请求数量
+     * @var int 记录每一轮已经处理的请求数量，为session所使用，不能用于其他用途
      */
     public static $request_num = 0;
 
@@ -90,9 +90,6 @@ class Server
                 $response->status($exception->getCode());
             }
 
-            //$result = "hello";
-            //$response->header("Content-Type", $this->contentType);
-            //var_dump('cookie:'.json_encode($_COOKIE));
             $session_config = Config::get(Config::CONFIG,'session');
             if(isset($session_config['on']) && $session_config['on']) {
                 if(isset($session_config['session_name']))

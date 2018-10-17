@@ -10,6 +10,7 @@ namespace core\session;
 
 use core\exception\ServerException;
 use core\LocalCache;
+use core\swoole\Server;
 
 /**
  * 基于本地缓存的session
@@ -26,7 +27,7 @@ class SessionLocal extends \SessionHandler
         //GC 概率 = gc_probability/gc_divisor ，例如以下配置表明每1000次请求有1次机会清理垃圾，
         //就是将所有“未访问时长”超过maxLifetime的项目清理掉
         'gc_probability ' => 1,
-        'gc_divisor'      => 1000,
+        'gc_divisor'      => 10000,
     ];
 
     /**
@@ -50,6 +51,7 @@ class SessionLocal extends \SessionHandler
     {
         $session = LocalCache::get($session_id);
 
+        return $session;
     }
 
     /**
@@ -61,12 +63,8 @@ class SessionLocal extends \SessionHandler
      */
     public function write($session_id, $session_data)
     {
-        $result = $this->handler->setex(
-            $session_id,
-            self::$session_config['max_lifetime'],
-            $session_data
-        );
-        return $result ? true : false;
+        if(Server::$request_num == self::$session_config['gc_divisor'])
+            $this->gc(self::$session_config['max_lifetime']);
     }
 
     /**

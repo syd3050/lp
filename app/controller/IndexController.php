@@ -30,7 +30,7 @@ class IndexController extends BaseController
         Session::set('count',$count);
 
         return ['cout'=>$count];
-        */
+
         $data = [5=>'a',2=>'b',7=>'c',1=>'d',8=>'e',9=>'f',10=>'g'];
         $data = array_flip($data);
         $heap = new ArrayMinHeap();
@@ -46,5 +46,6 @@ class IndexController extends BaseController
             $total--;
         }
         return ['heap'=>ltrim($r)];
+        */
     }
 }
