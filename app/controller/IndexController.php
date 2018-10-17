@@ -9,6 +9,7 @@ namespace app\controller;
 
 use core\BaseController;
 use core\session\Session;
+use core\utils\ArrayMinHeap;
 
 class IndexController extends BaseController
 {
@@ -31,7 +32,8 @@ class IndexController extends BaseController
         return ['cout'=>$count];
         */
         $data = [5=>'a',2=>'b',7=>'c',1=>'d',8=>'e',9=>'f',10=>'g'];
-        $heap = new \SplMinHeap();
+        $data = array_flip($data);
+        $heap = new ArrayMinHeap();
         foreach ($data as $k=>$v)
         {
             $heap->insert([$k=>$v]);
