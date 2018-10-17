@@ -48,6 +48,7 @@ class SessionLocal extends \SessionHandler
      */
     public function read($session_id)
     {
+        $session = LocalCache::get($session_id);
 
     }
 

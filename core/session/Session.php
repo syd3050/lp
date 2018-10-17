@@ -9,6 +9,7 @@
 namespace core\session;
 
 use core\Config;
+use core\exception\ConfigException;
 
 class Session
 {
@@ -18,12 +19,15 @@ class Session
 
     /**
      * @return \SessionHandler
+     * @throws ConfigException
      */
     private static function _init()
     {
         if(self::$_instance == null)
         {
             $config = Config::get(Config::CONFIG,'session');
+            if(!isset($config['on']) || boolval($config['on']) == false)
+                throw new ConfigException("You need to set item 'on' to true to enable Session!");
             if(isset($config['session_name']))
                 self::$_session_name = $config['session_name'];
             if(isset($config['save_path']))

@@ -39,6 +39,8 @@ return [
     /*
     Session配置
     'session' => [
+        //是否启用session机制
+        'on'    => true,
         'type'  => '',
         //需要继承SessionHandler类
         'class' => 'app\\core\\Sessionxx',

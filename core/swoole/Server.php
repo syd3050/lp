@@ -19,6 +19,10 @@ class Server
     public $host;
     public $contentType;
     public $request;
+    /**
+     * @var int 记录已经处理的请求数量
+     */
+    public static $request_num = 0;
 
     private $_config = [
         'host'   =>  '127.0.0.1',
@@ -65,13 +69,12 @@ class Server
             echo "Swoole http server is started at ".$this->_config['host'].":".$this->_config['port']."\n";
         });
         $http->on("request", function (\swoole_http_request $request, \swoole_http_response $response) {
-            if(getV($request->server,'request_uri') == '/favicon.ico')
-            {
+            if(getV($request->server,'request_uri') == '/favicon.ico') {
                 $response->header("Content-Type", "text/plain;charset=UTF-8");
                 $response->end("");
                 return;
             }
-
+            self::$request_num++;
             //填充server相关变量
             $this->_build_global($request);
             $this->request = $this->_build_request($request);
@@ -90,12 +93,13 @@ class Server
             //$result = "hello";
             //$response->header("Content-Type", $this->contentType);
             //var_dump('cookie:'.json_encode($_COOKIE));
-            if(!isset($_COOKIE['PHPSESSID'])){
-                $response->header("Set-Cookie", "PHPSESSID=".Session::session_id());
-                $response->header("has-id","nonono");
-            } else {
-                $response->header("Set-Cookie", "PHPSESSID=".$_COOKIE['PHPSESSID'].';path=/');
-                $response->header("has-id",$_COOKIE['PHPSESSID']);
+            $session_config = Config::get(Config::CONFIG,'session');
+            if(isset($session_config['on']) && $session_config['on']) {
+                if(isset($session_config['session_name']))
+                    $session_name = $session_config['session_name'];
+                else
+                    $session_name = 'PHPSESSID';
+                $response->header("Set-Cookie", "{$session_name}=".Session::session_id());
             }
             $response->header("Content-Type", "text/plain;charset=UTF-8");
             $response->end(json_encode($result)."\n");
