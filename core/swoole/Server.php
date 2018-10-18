@@ -26,8 +26,10 @@ class Server
     public static $request_num = 0;
 
     private $_config = [
-        'host'   =>  '127.0.0.1',
-        'port'   =>  9501,
+        'host'     =>  '127.0.0.1',
+        'port'     =>  9501,
+        'HttpOnly' =>  false,
+        'secure'   =>  false,
         'swoole' => [
             'reactor_num' => 2,   //reactor thread num
             'worker_num' => 2,    //worker process num
@@ -38,10 +40,14 @@ class Server
         ]
     ];
 
+    /**
+     *
+     * @param array $config 构造函数配置参数优先级最高，配置文件中的server配置项其次，本类中的_config配置项最低
+     */
     public function __construct($config=[])
     {
-        $swoole = Config::get(Config::CONFIG,'swoole') ?: [];
-        $config = array_merge($config,$swoole);
+        $server = Config::get(Config::CONFIG,'server') ?: [];
+        $config = array_merge($server,$config);
         empty($config) || $this->_config = array_merge($this->_config,$config);
     }
 

@@ -9,7 +9,6 @@
 namespace core\session;
 
 use core\Config;
-use core\exception\ConfigException;
 
 class Session
 {
