@@ -11,6 +11,7 @@ namespace core\session;
 use core\exception\ServerException;
 use core\LocalCache;
 use core\swoole\Server;
+use core\utils\ArrayMinHeap;
 
 /**
  * 基于本地缓存的session
@@ -20,14 +21,20 @@ class SessionLocal extends \SessionHandler
 {
     //1 hours
     const MAX_LIFETIME = 3600;
+    const MAX_REQUEST = 10000;
+    /**
+     * @var ArrayMinHeap
+     */
+    protected static $gc_heap = null;
 
     protected static $session_config = [
         'session_name'    => 'PHPSESSID',
         'max_lifetime'    => self::MAX_LIFETIME,
-        //GC 概率 = gc_probability/gc_divisor ，例如以下配置表明每1000次请求有1次机会清理垃圾，
+        //GC 概率 = gc_probability/gc_divisor ，例如以下配置表明每10000次请求有1次机会清理垃圾，
         //就是将所有“未访问时长”超过maxLifetime的项目清理掉
         'gc_probability ' => 1,
-        'gc_divisor'      => 10000,
+        //每多少次请求做一次垃圾清理
+        'gc_divisor'      => self::MAX_REQUEST,
     ];
 
     /**
@@ -38,6 +45,10 @@ class SessionLocal extends \SessionHandler
      */
     public function open($savePath, $session_name)
     {
+        self::$session_config['session_name'] = $session_name;
+        if(self::$gc_heap == null) {
+            self::$gc_heap = new ArrayMinHeap();
+        }
         return true;
     }
 
@@ -50,8 +61,14 @@ class SessionLocal extends \SessionHandler
     public function read($session_id)
     {
         $session = LocalCache::get($session_id);
-
-        return $session;
+        if(Server::$request_num >= self::$session_config['gc_divisor']){
+            Server::$request_num = 0;
+            $this->gc(self::$session_config['max_lifetime']);
+        }
+        //更新访问时间
+        $session_data = ['t'=>time(),'d'=>$session['d']];
+        LocalCache::set($session_id,$session_data);
+        return $session['d'];
     }
 
     /**
@@ -63,8 +80,18 @@ class SessionLocal extends \SessionHandler
      */
     public function write($session_id, $session_data)
     {
-        if(Server::$request_num == self::$session_config['gc_divisor'])
+        //新增session
+        if(empty(LocalCache::get($session_id))) {
+            self::$gc_heap->insert([time()=>$session_id]);
+        }
+        //更新访问时间
+        $session_data = ['t'=>time(),'d'=>$session_data];
+        $r = LocalCache::set($session_id,$session_data);
+        if(Server::$request_num >= self::$session_config['gc_divisor']){
+            Server::$request_num = 0;
             $this->gc(self::$session_config['max_lifetime']);
+        }
+        return $r;
     }
 
     /**
@@ -74,88 +101,42 @@ class SessionLocal extends \SessionHandler
      */
     public function destroy($session_id)
     {
-        return $this->handler->delete($session_id) > 0;
+        return LocalCache::del($session_id);
+    }
+
+    public function close()
+    {
+        while (!self::$gc_heap->isEmpty()) {
+            $oldest = self::$gc_heap->extract();
+            $time = key($oldest);
+            $session_id = $oldest[$time];
+            LocalCache::del($session_id);
+        }
     }
 
     /**
      * Session 垃圾回收
-     * 使用的是redis的setex过期机制维护，不需要垃圾回收
      * @param  string $maxlifetime
      * @return bool
      */
     public function gc($maxlifetime)
     {
+        //所有超过生存周期的都回收
+        while (!self::$gc_heap->isEmpty() && (time()-key(self::$gc_heap->top()) >= $maxlifetime)) {
+            $oldest = self::$gc_heap->extract();
+            $time = key($oldest);
+            $session_id = $oldest[$time];
+            $last_time = LocalCache::get($session_id)['t'];
+            //如果该项最近被访问过，重新加进来
+            if($last_time > $time) {
+                self::$gc_heap->insert([$last_time=>$session_id]);
+            }else {
+                //已过期，删除
+                self::destroy($session_id);
+            }
+
+        }
         return true;
     }
-
-
-
-    public function get($key)
-    {
-        // TODO: Implement get() method.
-        $session_id = $this->getSession_id();
-        $session = LocalCache::get($this->session_name.'-'.$session_id);
-        //更新访问时间
-        if(isset($session[$key]['data']) && $this->isValid($session[$key]))
-        {
-            $session[$key]['last_visit'] = time();
-            return $session[$key]['data'];
-        }
-        return null;
-    }
-
-    public function set($key, $value)
-    {
-        // TODO: Implement set() method.
-        $session_id = $this->getSession_id();
-        $session_data = LocalCache::get($this->session_name.'-'.$session_id);
-        $session_data[$key] = ['data'=>$value, 'last_visit'=>time()];
-        LocalCache::set($this->session_name.'-'.$session_id, $session_data);
-    }
-
-    private function isValid($cache)
-    {
-        if(isset($cache['last_visit']))
-        {
-            if($this->max_lifetime == -1)
-                return true;
-            if((time()-$cache['last_visit']) > $this->max_lifetime)
-                return false;
-            return true;
-        }
-        return false;
-    }
-
-    private function getSession_id()
-    {
-        if(empty($_COOKIE[$this->session_name]))
-        {
-            while (!empty(LocalCache::get($this->session_name.'-'.($sid = uuid($this->session_name)))))
-            {
-                usleep(100);
-            }
-            return $sid;
-        }
-        return $_COOKIE[$this->session_name];
-    }
-
-    function del($key)
-    {
-        // TODO: Implement del() method.
-        $session_id = $this->getSession_id();
-        $session_data = LocalCache::get($this->session_name.'-'.$session_id);
-        if(isset($session_data[$key])){
-            unset($session_data[$key]);
-        }
-        LocalCache::set($this->session_name.'-'.$session_id,$session_data);
-    }
-
-    public function clear()
-    {
-        // TODO: Implement clear() method.
-        $session_id = $this->getSession_id();
-        LocalCache::del($this->session_name.'-'.$session_id);
-    }
-
 
 }

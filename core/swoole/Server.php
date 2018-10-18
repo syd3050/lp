@@ -13,6 +13,7 @@ use core\request\ServerRequestFactory;
 use core\response\ResponseFactory;
 use core\Route;
 use core\session\Session;
+use core\session\SessionLocal;
 
 class Server
 {
@@ -20,7 +21,7 @@ class Server
     public $contentType;
     public $request;
     /**
-     * @var int 记录每一轮已经处理的请求数量，为session所使用，不能用于其他用途
+     * @var int 记录每一轮已经处理的请求数量
      */
     public static $request_num = 0;
 
