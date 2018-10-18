@@ -9,7 +9,6 @@ namespace app\controller;
 
 use core\BaseController;
 use core\session\Session;
-use core\utils\ArrayMinHeap;
 
 class IndexController extends BaseController
 {
@@ -17,7 +16,6 @@ class IndexController extends BaseController
     public function index()
     {
         Session::set('count',0);
-        var_dump(['index=>count:'=>Session::get('count')]);
         return ['count init'=>0];
     }
 

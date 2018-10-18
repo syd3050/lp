@@ -8,7 +8,6 @@
 
 namespace core\session;
 
-use core\exception\ServerException;
 use core\LocalCache;
 use core\swoole\Server;
 use core\utils\ArrayMinHeap;
@@ -21,7 +20,7 @@ class SessionLocal extends \SessionHandler
 {
     //1 hours
     const MAX_LIFETIME = 3600;
-    const MAX_REQUEST = 10000;
+    const MAX_REQUEST = 1000;
     /**
      * @var ArrayMinHeap
      */
