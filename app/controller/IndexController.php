@@ -23,14 +23,14 @@ class IndexController extends BaseController
 
     public function a()
     {
-        /*
+
         $count = Session::get('count');
         empty($count) && $count = 0;
         $count++;
         Session::set('count',$count);
 
         return ['cout'=>$count];
-
+        /*
         $data = [5=>'a',2=>'b',7=>'c',1=>'d',8=>'e',9=>'f',10=>'g'];
         $data = array_flip($data);
         $heap = new ArrayMinHeap();

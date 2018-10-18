@@ -61,6 +61,8 @@ class SessionLocal extends \SessionHandler
     public function read($session_id)
     {
         $session = LocalCache::get($session_id);
+        if(empty($session))
+            return null;
         if(Server::$request_num >= self::$session_config['gc_divisor']){
             $num = Server::$request_num;
             //重置

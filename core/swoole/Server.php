@@ -92,7 +92,8 @@ class Server
             }
 
             $session_config = Config::get(Config::CONFIG,'session');
-            if(isset($session_config['on']) && $session_config['on']) {
+            //不设置on选项，或者on=true，这两种情况都开启session
+            if(!isset($session_config['on']) || (isset($session_config['on']) && $session_config['on'])) {
                 if(isset($session_config['session_name']))
                     $session_name = $session_config['session_name'];
                 else
