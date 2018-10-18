@@ -62,7 +62,9 @@ class SessionLocal extends \SessionHandler
     {
         $session = LocalCache::get($session_id);
         if(Server::$request_num >= self::$session_config['gc_divisor']){
-            Server::$request_num = 0;
+            $num = Server::$request_num;
+            //重置
+            Server::$request_num %= $num;
             $this->gc(self::$session_config['max_lifetime']);
         }
         //更新访问时间
@@ -88,7 +90,9 @@ class SessionLocal extends \SessionHandler
         $session_data = ['t'=>time(),'d'=>$session_data];
         $r = LocalCache::set($session_id,$session_data);
         if(Server::$request_num >= self::$session_config['gc_divisor']){
-            Server::$request_num = 0;
+            $num = Server::$request_num;
+            //重置
+            Server::$request_num %= $num;
             $this->gc(self::$session_config['max_lifetime']);
         }
         return $r;
