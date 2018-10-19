@@ -9,6 +9,7 @@
 namespace core\session;
 
 use core\Config;
+use core\exception\ConfigException;
 
 class Session
 {
@@ -43,12 +44,16 @@ class Session
     public static function session_id()
     {
         $config = Config::get(Config::CONFIG,'session');
+        //不设置on选项，或者on=true，这两种情况都开启session
+        if(isset($config['on']) && boolval($config['on']) == false) {
+           throw new ConfigException("You need to enable session,set on=true please!");
+        }
         $session_name = isset($config['session_name']) ? $config['session_name'] : 'PHPSESSID';
         if(!isset($_COOKIE[$session_name]))
         {
-            $_COOKIE[$session_name] = randStr('session_',26);
+            $_COOKIE[$session_name] = randStr('session_',26).';';
         }
-        return $_COOKIE[$session_name];
+        return rtrim($_COOKIE[$session_name],';');
     }
 
     public static function get($key)

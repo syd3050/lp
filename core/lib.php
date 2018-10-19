@@ -1196,10 +1196,26 @@ if(!function_exists('normalizeNestedFileSpec'))
     }
 }
 
-if(!function_exists('setHeader'))
+function setHeaderEx($name,$value)
 {
-    function setHeader($name,$value)
-    {
+    $_REQUEST['header'][$name] = $value;
+}
 
+function setCookieEx($name,$value,$expires='',$path='',$domain='')
+{
+    if(empty($name) || empty($value)) {
+        return false;
     }
+    $str = "{$value};";
+    if(!empty($domain)) {
+        $str .= "domain={$domain};";
+    }
+    if(!empty($path)) {
+        $str .= "path={$domain};";
+    }
+    if(!empty($expires)) {
+        $str .= gmdate('D, d M Y H:i:s T',$expires).';';
+    }
+    $_COOKIE[$name] = $str;
+    return true;
 }

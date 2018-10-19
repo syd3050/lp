@@ -96,17 +96,11 @@ class Server
                 $result = $exception->getMessage();
                 $response->status($exception->getCode());
             }
-
-            $session_config = Config::get(Config::CONFIG,'session');
-            //不设置on选项，或者on=true，这两种情况都开启session
-            if(!isset($session_config['on']) || (isset($session_config['on']) && $session_config['on'])) {
-                if(isset($session_config['session_name']))
-                    $session_name = $session_config['session_name'];
-                else
-                    $session_name = 'PHPSESSID';
-                $response->header("Set-Cookie", "{$session_name}=".Session::session_id());
+            $header = $this->_set_header();
+            foreach ($header as $k=>$v)
+            {
+                $response->header($k, $v);
             }
-            $response->header("Content-Type", "text/plain;charset=UTF-8");
             $response->end(json_encode($result)."\n");
         });
 
@@ -127,18 +121,17 @@ class Server
             ->withUploadedFiles(normalizeFiles($_FILES));
     }
 
-    private function _build_response($code,$phrase,$header=[],$body = null, $version = '1.1')
+    private function _set_header()
     {
-        $response = (new ResponseFactory())->createResponse($code,$phrase);
-        if ($body !== '' && $body !== null) {
-            $body = stream_for($body);
+        $cookie = '';
+        foreach ($_COOKIE as $k=>$v){
+            $last = strpos($v,';') != (strlen($v)-1) ? ';' : '';
+            $cookie .= "$k=$v{$last}";
         }
-        foreach ($header as $k=>$v)
-        {
-            $response = $response->withHeader($k,$v);
-        }
-        return $response->withBody($body)->withProtocolVersion($version);
-
+        $_REQUEST['header']['Set-Cookie'] = $cookie;
+        if(!isset($_REQUEST['header']['Content-Type']))
+            $_REQUEST['header']['Content-Type'] = "text/plain;charset=UTF-8";
+        return $_REQUEST['header'];
     }
 
     private function _build_global($request)
