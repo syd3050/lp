@@ -38,7 +38,7 @@ abstract class Pool
         $this->_connections = new Channel($this->_config['max']);
     }
 
-    public function _init()
+    protected function _init()
     {
         $min = $this->_config['min'];
         while ($this->_count <= $min) {

@@ -11,6 +11,7 @@ namespace core\db;
 
 interface IDB
 {
+    public function init();
     public function query($sql,$timeout = -1);
     public function execute($sql,$params=[],$timeout=-1);
 }

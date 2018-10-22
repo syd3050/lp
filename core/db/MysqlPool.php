@@ -21,7 +21,7 @@ final class MysqlPool extends Pool implements IDB
       'pool' => [
           'timeout' => 15,  //获取数据库实例超时时间
       ],
-      'mysql' => [
+      'db' => [
           'host' => '127.0.0.1',
           'port' => 3306,
           'user' => 'user',
@@ -48,11 +48,16 @@ final class MysqlPool extends Pool implements IDB
         return self::$_instance;
     }
 
+    public function init()
+    {
+        return $this->_init();
+    }
+
     protected function create()
     {
         // TODO: Implement create() method.
         $db = new \Swoole\Coroutine\Mysql();
-        $db->connect($this->_config['mysql']);
+        $db->connect($this->_config['db']);
         return $db;
     }
 

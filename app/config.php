@@ -19,6 +19,7 @@ return [
     ],
 
     'database' => [
+        'type' => 'mysql',//Or Oracle
         'host' => '',
         'port' => '',
         'name' => '',
