@@ -22,6 +22,7 @@ abstract class Pool
         'max'     => 30,
         'timeout' => 3,
         'free_ttl'=> 3600,  //空闲时间超过1个小时的连接将被回收
+        'gc_rate' => 0.8,   //池中空闲连接数超过max*_gc_rate时，才会真正回收
     );
 
     private $_count = 0;
@@ -45,6 +46,7 @@ abstract class Pool
             $this->backToPool($instance);
             $this->_count++;
         }
+        $this->gc();
         return $this;
     }
 
@@ -61,7 +63,11 @@ abstract class Pool
              */
             if($timeout <= 0)
                 $timeout = $this->_config['timeout'];
-            return $this->_connections->pop($timeout);
+            $r = $this->_connections->pop($timeout);
+            if($r) {
+                $r = $r['obj'];
+            }
+            return $r;
         }
         $instance = $this->create();
         $this->_count++;
@@ -70,7 +76,9 @@ abstract class Pool
 
     protected function backToPool($instance)
     {
-        $this->_connections->push($instance);
+        $this->_connections->push([
+            'obj'=>$instance,'last_access'=>time()
+        ]);
     }
 
     protected function poolSize()
@@ -78,29 +86,30 @@ abstract class Pool
         return $this->_connections->length();
     }
 
-    public function gc()
+    private function gc()
     {
         //5分钟检测一次
         swoole_timer_tick(300000, function () {
             $list = [];
-            //请求连接数还比较多，暂不回收空闲连接
-            if ($this->_connections->length() < intval($this->_config['max'] * 0.5)) {
+            /* 池中空闲连接数超过max*_gc_rate时，才会真正回收 */
+            if ($this->_connections->length() <= intval($this->_config['max'] * $this->_config['_gc_rate'])) {
                 return ;
             }
             $min = $this->_config['min'];
             $free_ttl = $this->_config['free_ttl'];
             while (true) {
-                if (!$this->_connections->isEmpty()) {
-                    $obj = $this->_connections->pop(0.001);
-                    $last_used_time = $obj['last_used_time'];
-                    //回收
-                    if ($this->_count > $min && (time() - $last_used_time > $free_ttl)) {
-                        $this->_count--;
-                    } else {
-                        array_push($list, $obj);
-                    }
-                } else {
+                if($this->_connections->isEmpty())
                     break;
+                $obj = $this->_connections->pop(0.01);
+                //超时，认为池为空，瞬间才有连接归池,这种情况直接退出循环
+                if(!$obj)
+                    break;
+                $last_access = $obj['last_access'];
+                //回收
+                if ($this->_count > $min && (time() - $last_access > $free_ttl)) {
+                    $this->_count--;
+                } else {
+                    array_push($list, $obj);
                 }
             }
             foreach ($list as $item) {
