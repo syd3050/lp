@@ -13,6 +13,10 @@ class DBModel
 {
     private $_table;
     private $_pk = 'id';
+    private $_where = '';
+    private $_params = '';
+    private $_columns = ' * ';
+    private $_order_by = '';
 
     public function __construct($table='')
     {
@@ -47,5 +51,35 @@ class DBModel
     public function getSql()
     {
 
+    }
+
+    private function _buildSql()
+    {
+        $sql = "SELECT {$this->_columns} FROM {$this->_table} WHERE {$this->_where} ";
+        return $sql;
+    }
+
+    public function orderBy($orderBy)
+    {
+        $this->_order_by = $orderBy;
+        return $this;
+    }
+
+    public function select($columns)
+    {
+        $this->_columns = $columns;
+        return $this;
+    }
+
+    public function where($condition)
+    {
+        $this->_where = $condition;
+        return $this;
+    }
+
+    public function params($params)
+    {
+        $this->_params = $params;
+        return $this;
     }
 }

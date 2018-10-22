@@ -17,4 +17,5 @@ class DB
         $model = new DBModel($table);
         return $model;
     }
+
 }
