@@ -13,7 +13,7 @@ class DB
     public static $pools = array();
 
     private static $_config = [
-        'type'  => 'Mysql',
+        'type'  => 'mysql',
         'pool'  => 'core\\db\\mysql\\MysqlPool',
         'model' => 'core\\db\\mysql\\Mysql',
     ];

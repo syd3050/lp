@@ -24,8 +24,8 @@ final class MysqlPool extends Pool
       'db' => [
           'host' => '127.0.0.1',
           'port' => 3306,
-          'user' => 'user',
-          'password'  => 'pass',
+          'user' => 'root',
+          'password'  => '111111',
           'database'  => 'test',
           'charset'   => 'utf8',
           'fetch_mode'=>true,
@@ -50,10 +50,15 @@ final class MysqlPool extends Pool
 
     protected function create()
     {
-        // TODO: Implement create() method.
-        $db = new \Swoole\Coroutine\Mysql();
-        $db->connect($this->_config['db']);
-        return $db;
+        $r = null;
+        go(function() use (&$r){
+            $db = new \Swoole\Coroutine\Mysql();
+            $db->connect($this->_config['db']);
+            $r = $db;
+            var_dump(['create'=>$r]);
+        });
+        //var_dump(['create'=>$r]);
+        return $r;
     }
 
     /**

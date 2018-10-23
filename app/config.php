@@ -20,11 +20,12 @@ return [
 
     'database' => [
         'type' => 'mysql',//Or Oracle
-        'host' => '',
-        'port' => '',
-        'name' => '',
-        'username' => '',
-        'password' => '',
+        'host' => '127.0.0.1',
+        'port' => 3306,
+        'user' => 'root',
+        'password'  => '111111',
+        'database'  => 'test',
+        'charset'   => 'utf8',
     ],
 
     'redis'  => [

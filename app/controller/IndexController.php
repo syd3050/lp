@@ -8,6 +8,7 @@
 namespace app\controller;
 
 use core\BaseController;
+use core\db\DB;
 use core\session\Session;
 
 class IndexController extends BaseController
@@ -17,6 +18,14 @@ class IndexController extends BaseController
     {
         Session::set('count',0);
         return ['count init'=>0];
+    }
+
+    public function db()
+    {
+        $r = DB::table('ta')->save([
+           'name'=>'lisa','value'=>1,'create_time'=>date('Y-')
+        ]);
+        return ['r'=>$r];
     }
 
     public function a()

@@ -63,7 +63,10 @@ abstract class Pool
              */
             if($timeout <= 0)
                 $timeout = $this->_config['timeout'];
-            $r = $this->_connections->pop($timeout);
+            $r = false;
+            go(function() use ($timeout,&$r){
+                $r = $this->_connections->pop($timeout);
+            });
             if($r) {
                 $r = $r['obj'];
             }
@@ -76,9 +79,11 @@ abstract class Pool
 
     public function backToPool($instance)
     {
-        $this->_connections->push([
-            'obj'=>$instance,'last_access'=>time()
-        ]);
+        go(function() use ($instance){
+            $this->_connections->push([
+                'obj'=>$instance,'last_access'=>time()
+            ]);
+        });
     }
 
     public function poolSize()
@@ -113,7 +118,9 @@ abstract class Pool
                 }
             }
             foreach ($list as $item) {
-                $this->_connections->push($item);
+                go(function() use ($item){
+                    $this->_connections->push($item);
+                });
             }
             unset($list);
         });
