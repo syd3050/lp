@@ -20,14 +20,15 @@ class DB
 
     /**
      * @param  string $table
+     * @param  array  $config
      * @return DbBase
      */
-    public static function table($table)
+    public static function table($table,$config=[])
     {
         /**
          * @var DbBase $model
          */
-        $model = self::init()['model'];
+        $model = self::init($config)['model'];
         return $model->table($table);
     }
 
