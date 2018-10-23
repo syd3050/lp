@@ -26,7 +26,7 @@ abstract class Pool
     );
 
     private $_count = 0;
-    private $_connections = null;
+    protected $_connections = null;
 
     protected abstract function create();
 
@@ -41,9 +41,8 @@ abstract class Pool
     public function init()
     {
         $min = $this->_config['min'];
-        while ($this->_count <= $min) {
-            $instance = $this->create();
-            $this->backToPool($instance);
+        while ($this->_count < $min) {
+            $this->create();
             $this->_count++;
         }
         $this->gc();
@@ -63,10 +62,7 @@ abstract class Pool
              */
             if($timeout <= 0)
                 $timeout = $this->_config['timeout'];
-            $r = false;
-            go(function() use ($timeout,&$r){
-                $r = $this->_connections->pop($timeout);
-            });
+            $r = $this->_connections->pop($timeout);
             if($r) {
                 $r = $r['obj'];
             }
@@ -79,11 +75,9 @@ abstract class Pool
 
     public function backToPool($instance)
     {
-        go(function() use ($instance){
-            $this->_connections->push([
-                'obj'=>$instance,'last_access'=>time()
-            ]);
-        });
+        $this->_connections->push([
+            'obj'=>$instance,'last_access'=>time()
+        ]);
     }
 
     public function poolSize()

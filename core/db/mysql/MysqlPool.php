@@ -50,15 +50,11 @@ final class MysqlPool extends Pool
 
     protected function create()
     {
-        $r = null;
-        go(function() use (&$r){
+        go(function() {
             $db = new \Swoole\Coroutine\Mysql();
             $db->connect($this->_config['db']);
-            $r = $db;
-            var_dump(['create'=>$r]);
+            $this->backToPool($db);
         });
-        //var_dump(['create'=>$r]);
-        return $r;
     }
 
     /**
