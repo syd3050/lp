@@ -38,6 +38,38 @@ class Mysql extends DbBase
     }
 
     /**
+     * 保存数据，支持单个保存和批量保存，例如：
+     * $data = [
+          ['name'=>'abc','pwd'=>'123'],
+          ['name'=>'abcd','pwd'=>'123'],
+          ['name'=>'abce','pwd'=>'123'],
+       ] 或
+     * $data = ['name'=>'abc','pwd'=>'123'];
+     * @param $data
+     * @return bool
+     */
+    public function save($data)
+    {
+        if(empty($data))
+            return false;
+        //批量保存
+        if(dimension($data) > 1) {
+            $one = $data[key($data)];
+            $columns = '('. implode(',',array_keys($one)) . ')';
+            $values = '';
+            foreach ($data as $item) {
+                $values .= '('. implode(',',array_values($item)). '),';
+            }
+            $values = rtrim($values,',');
+        }else{
+            $columns = '('. implode(',',array_keys($data)) . ')';
+            $values = '('. implode(',',array_values($data)). ')';
+        }
+        $sql = "INSERT INTO {$this->_table} {$columns} VALUES {$values};";
+        return $this->query($sql);
+    }
+
+    /**
      * @param $sql
      * @param int $timeout 超时时间，$timeout如果小于或等于0，表示永不超时。在规定的时间内MySQL服务器未能返回数据，底层将返回false，设置错误码为110，并切断连接
      * @return mixed

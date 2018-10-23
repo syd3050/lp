@@ -80,6 +80,8 @@ abstract class DbBase
      */
     abstract public function query($sql,$timeout = -1);
 
+    abstract public function save($data);
+
     public function table($table)
     {
         $this->_table = $table;

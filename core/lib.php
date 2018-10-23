@@ -1196,26 +1196,45 @@ if(!function_exists('normalizeNestedFileSpec'))
     }
 }
 
-function setHeaderEx($name,$value)
-{
-    $_REQUEST['header'][$name] = $value;
+if(!function_exists('setHeaderEx')) {
+    function setHeaderEx($name, $value)
+    {
+        $_REQUEST['header'][$name] = $value;
+    }
 }
 
-function setCookieEx($name,$value,$expires='',$path='',$domain='')
-{
-    if(empty($name) || empty($value)) {
-        return false;
+if(!function_exists('setCookieEx')) {
+    function setCookieEx($name, $value, $expires = '', $path = '', $domain = '')
+    {
+        if (empty($name) || empty($value)) {
+            return false;
+        }
+        $str = "{$value};";
+        if (!empty($domain)) {
+            $str .= "domain={$domain};";
+        }
+        if (!empty($path)) {
+            $str .= "path={$domain};";
+        }
+        if (!empty($expires)) {
+            $str .= gmdate('D, d M Y H:i:s T', $expires) . ';';
+        }
+        $_COOKIE[$name] = $str;
+        return true;
     }
-    $str = "{$value};";
-    if(!empty($domain)) {
-        $str .= "domain={$domain};";
+}
+
+if(!function_exists('dimension')) {
+    /**
+     * 返回数组维度
+     * @param $arr
+     * @return int
+     */
+    function dimension($arr)
+    {
+        if(!is_array($arr))
+            return 0;
+        $item = $arr[key($arr)];
+        return 1+dimension($item);
     }
-    if(!empty($path)) {
-        $str .= "path={$domain};";
-    }
-    if(!empty($expires)) {
-        $str .= gmdate('D, d M Y H:i:s T',$expires).';';
-    }
-    $_COOKIE[$name] = $str;
-    return true;
 }
