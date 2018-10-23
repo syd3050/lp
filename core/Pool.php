@@ -38,7 +38,7 @@ abstract class Pool
         $this->_connections = new Channel($this->_config['max']);
     }
 
-    protected function _init()
+    public function init()
     {
         $min = $this->_config['min'];
         while ($this->_count <= $min) {
@@ -50,7 +50,7 @@ abstract class Pool
         return $this;
     }
 
-    protected function getFromPool($timeout = 0)
+    public function getFromPool($timeout = 0)
     {
         /**
          * 1.连接池不为空，直接从连接池取连接实例返回;
@@ -74,14 +74,14 @@ abstract class Pool
         return $instance;
     }
 
-    protected function backToPool($instance)
+    public function backToPool($instance)
     {
         $this->_connections->push([
             'obj'=>$instance,'last_access'=>time()
         ]);
     }
 
-    protected function poolSize()
+    public function poolSize()
     {
         return $this->_connections->length();
     }

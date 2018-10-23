@@ -75,7 +75,7 @@ class Server
         $http->set($this->_config['swoole']);
         $http->on("start", function ($server) {
             echo "Swoole http server is started at ".$this->_config['host'].":".$this->_config['port']."\n";
-            DB::getInstance()->init();
+            DB::init()['pool']->init();
         });
         $http->on("request", function (\swoole_http_request $request, \swoole_http_response $response) {
             if(getV($request->server,'request_uri') == '/favicon.ico') {

@@ -6,11 +6,11 @@
  * Time: 上午11:47
  */
 
-namespace core\db;
+namespace core\db\mysql;
 
 use core\Pool;
 
-final class MysqlPool extends Pool implements IDB
+final class MysqlPool extends Pool
 {
     /**
      * @var MysqlPool
@@ -48,84 +48,12 @@ final class MysqlPool extends Pool implements IDB
         return self::$_instance;
     }
 
-    public function init()
-    {
-        return $this->_init();
-    }
-
     protected function create()
     {
         // TODO: Implement create() method.
         $db = new \Swoole\Coroutine\Mysql();
         $db->connect($this->_config['db']);
         return $db;
-    }
-
-    /**
-     * @param $sql
-     * @param int $timeout 超时时间，$timeout如果小于或等于0，表示永不超时。在规定的时间内MySQL服务器未能返回数据，底层将返回false，设置错误码为110，并切断连接
-     * @return mixed
-     */
-    public function query($sql,$timeout = -1)
-    {
-        $db = $this->getFromPool();
-        $db->setDefer();
-        $r = $db->query($sql, $timeout);
-        if(!$r) {
-            //重连
-            if(!($db = $this->_reconnect($db)))
-                return null;
-        }
-        $r = $db->recv();
-        if(!$r) {
-            //重连
-            if(!($db = $this->_reconnect($db)))
-                return null;
-            $r = $db->recv();
-        }
-        $this->backToPool($db);
-        return $r;
-    }
-
-    public function execute($sql,$params=[],$timeout=-1)
-    {
-        list($sql,$params) = $this->parseSql($sql,$params);
-        /**
-         * @var $db \Swoole\Coroutine\Mysql
-         */
-        $db = $this->getFromPool();
-        /**
-         * @var $stmt \Swoole\Coroutine\Mysql\Statement
-         */
-        $stmt = $db->prepare($sql);
-        if($stmt == false) {
-            //重连
-            if(!($db = $this->_reconnect($db)))
-                return null;
-            $stmt = $db->prepare($sql);
-        }
-        $r = $stmt->execute($params,$timeout);
-        $this->backToPool($db);
-        return  $r;
-    }
-
-    /**
-     * 重连
-     * @param  \Swoole\Coroutine\Mysql $db
-     * @return \Swoole\Coroutine\Mysql | bool
-     */
-    private function _reconnect($db)
-    {
-        if ($db->errno == 2006 or $db->errno == 2013)
-        {
-            $times = $this->poolSize() + 1;
-            do{
-                $db = $this->getFromPool();
-                $times--;
-            }while(!$db && $times);
-            return $db;
-        }
-        return false;
     }
 
     /**
