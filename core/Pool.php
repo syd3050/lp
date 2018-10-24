@@ -51,7 +51,7 @@ abstract class Pool
     public function getFromPool($timeout = 0)
     {
         if($this->_connections->isEmpty() && $this->_count < $this->_config['max']) {
-            dev_dump(['getFromPool'=>'empty,count:'.$this->_count.',max:'.$this->_config['max']]);
+            var_dump(['getFromPool'=>'empty,count:'.$this->_count.',max:'.$this->_config['max']]);
             $this->create();
         }
         /*

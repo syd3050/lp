@@ -75,7 +75,7 @@ class Server
         $http->set($this->_config['swoole']);
         $http->on("start", function ($server) {
             echo "Swoole http server is started at ".$this->_config['host'].":".$this->_config['port']."\n";
-            DB::init()['pool']->init();
+            DB::init();
         });
         $http->on("workerStart",function (){
 

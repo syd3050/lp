@@ -28,13 +28,13 @@ class DB
         /**
          * @var DbBase $model
          */
-        $model = self::init($config)['model'];
+        $model = self::init($config);
         return $model->table($table);
     }
 
     /**
      * @param array $config
-     * @return array
+     * @return DbBase
      */
     public static function init($config = [])
     {
@@ -46,9 +46,9 @@ class DB
         if(!isset(self::$pools[$type])) {
             //需要重新创建
             self::$pools[$type]['pool'] = call_user_func($config['pool'].'::getInstance');
+            self::$pools[$type]['pool']->init();
             self::$pools[$type]['model'] = new $config['model'](self::$pools[$type]['pool']);
-            return self::$pools[$type];
         }
-        return self::$pools[$type];
+        return  self::$pools[$type]['model'];
     }
 }
