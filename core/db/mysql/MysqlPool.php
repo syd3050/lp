@@ -50,13 +50,13 @@ final class MysqlPool extends Pool
         return self::$_instance;
     }
 
-    protected function create()
+    protected function create($class,$fun)
     {
-        go(function() {
+        go(function() use ($class,$fun) {
             $db = new \Swoole\Coroutine\Mysql();
             $db->connect($this->_config['db']);
             //$this->_count++;
-            $this->backToPool($db);
+            $this->backToPool($class,$fun,$db);
         });
         $this->_count++;
     }

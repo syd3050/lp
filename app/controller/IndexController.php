@@ -88,9 +88,10 @@ class IndexController extends BaseController
             ]);
             $this->backToPool($db);
         }); */
-        $r = DB::table('ta')->save([
+/*        $r = DB::table('ta')->save([
            'name'=>'lisa','value'=>1,'create_time'=>date('Y-m-d H:i:s')
-        ]);
+        ]);*/
+        $r = DB::init();
         /*
         $r = $this->save([
             ['name'=>'lisa2','value'=>2,'create_time'=>date('Y-m-d H:i:s')],

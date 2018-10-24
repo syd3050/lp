@@ -27,6 +27,7 @@ abstract class DbBase
     protected $_limit_offset = -1;
     protected $_limit_len = 0;
     protected $_having = '';
+    protected $_type = '';
     const TIME_OUT = 10;
 
     public function pk($pk)
@@ -35,7 +36,7 @@ abstract class DbBase
         return $this;
     }
 
-    public function __construct($pool)
+    public function __construct(&$pool)
     {
         $this->_pool = $pool;
     }

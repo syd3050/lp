@@ -86,7 +86,7 @@ class Mysql extends DbBase
      */
     public function query($sql,$timeout = -1)
     {
-        $db = $this->_pool->getFromPool();
+        $db = $this->_pool->getFromPool(__CLASS__);
         $db->setDefer();
         $r = $db->query($sql, $timeout);
         if(!$r) {
@@ -101,7 +101,7 @@ class Mysql extends DbBase
                 return null;
             $r = $db->recv();
         }
-        $this->_pool->backToPool($db);
+        $this->_pool->backToPool('Mysql','query',$db);
         return $r;
     }
 
@@ -125,19 +125,20 @@ class Mysql extends DbBase
     public function execute($sql,$params=[],$timeout=-1)
     {
         list($sql,$params) = $this->parseSql($sql,$params);
-        dev_dump([
+        var_dump([
             //'connection'=>md5($this->_pool),
             'execute'=>'poolsize:'.$this->_pool->poolSize()
         ]);
         /**
          * @var $db
          */
-        $db = $this->_pool->getFromPool();
+        $db = $this->_pool->getFromPool(__CLASS__);
         /**
          * @var $stmt
          */
         $stmt = $db->prepare($sql);
         if($stmt == false) {
+            var_dump(['execute'=>'stmt is false']);
             //重连
             if(!($db = $this->_reconnect($db)))
                 return null;
@@ -146,7 +147,7 @@ class Mysql extends DbBase
         //var_dump(['param'=>$params,'sql'=>$sql]);
         $r = $stmt->execute($params,$timeout);
         //var_dump(['execute-before-back'=>$this->_pool->poolSize()]);
-        $this->_pool->backToPool($db);
+        $this->_pool->backToPool('Mysql',"execute",$db);
         return  $r;
     }
 
@@ -161,7 +162,7 @@ class Mysql extends DbBase
         {
             $times = $this->_pool->poolSize() + 1;
             do{
-                $db = $this->_pool->getFromPool();
+                $db = $this->_pool->getFromPool(__CLASS__);
                 $times--;
             }while(!$db && $times);
             return $db;

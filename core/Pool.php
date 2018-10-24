@@ -28,7 +28,7 @@ abstract class Pool
     protected $_count = 0;
     protected $_connections = null;
 
-    protected abstract function create();
+    protected abstract function create($class,$fun);
 
     public function __construct($config)
     {
@@ -38,21 +38,22 @@ abstract class Pool
         $this->_connections = new Channel($this->_config['max']);
     }
 
-    public function init()
+    public function init($class)
     {
         $min = $this->_config['min'];
         while ($this->_count < $min) {
-            $this->create();
+            $this->create($class,'init');
         }
         $this->gc();
         return $this;
     }
 
-    public function getFromPool($timeout = 0)
+    public function getFromPool($class,$timeout = 0)
     {
+        var_dump(['getFromPool-parent-class'=>$class]);
         if($this->_connections->isEmpty() && $this->_count < $this->_config['max']) {
             var_dump(['getFromPool'=>'empty,count:'.$this->_count.',max:'.$this->_config['max']]);
-            $this->create();
+            $this->create($class,'getFromPool');
         }
         /*
          * 1.连接池不为空，直接从连接池取连接实例返回;
@@ -71,12 +72,12 @@ abstract class Pool
 
     }
 
-    public function backToPool($instance)
+    public function backToPool($class,$fun,$instance)
     {
+        var_dump(['backToPool-parent-class'=>$class.",fun:".$fun.',sizeBefore:'.$this->poolSize()]);
         $this->_connections->push([
             'obj'=>$instance,'last_access'=>time()
         ]);
-        var_dump(['backto'=>$this->poolSize()]);
     }
 
     public function poolSize()
