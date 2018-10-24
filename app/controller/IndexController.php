@@ -39,35 +39,41 @@ class IndexController extends BaseController
             $keys = array_keys($one);
             $columns = '('. implode(',',$keys) . ')';
             $columns_num = count($keys);
-            $num = count($data);
+            $values = [];
             $tokens = array_fill(0,$columns_num,'?');
-            $values = array_fill(0,$num,'('. implode(',',$tokens). ')');
-            $values = implode(',',$values);
+            $str = '('. implode(',',$tokens). ')';
+            $values_str = '';
+            foreach ($data as $item) {
+                $values = array_merge($values,array_values($item));
+                $values_str .= $str.',';
+            }
+            $values_str = rtrim($values_str,',');
         }else{
             $keys = array_keys($data);
             $columns = '('. implode(',',$keys) . ')';
             $columns_num = count($keys);
-            $values = array_fill(0,$columns_num,'?');
-            $values = '('. implode(',',$values) . ')';
+            $values = array_values($data);
+            $values_str = array_fill(0,$columns_num,'?');
+            $values_str = '('. implode(',',$values_str) . ')';
         }
-        //$columns = "(name,value,create_time)";
 
-        $sql = "INSERT INTO ta {$columns} VALUES {$values};";
+        $sql = "INSERT INTO ta {$columns} VALUES {$values_str};";
         $db = $this->_connections->pop()['obj'];
         $stmt = $db->prepare($sql);
         if ($stmt == false)
         {
-            var_dump($db->errno, $db->error);
+
             $r = false;
         }
         else {
-            $r = $stmt->execute(['lisat', 1, date('Y-m-d H:i:s')], -1);
+            $r = $stmt->execute($values, -1);
         }
         return $r;
     }
 
     public function db()
     {
+        /*
         $this->_connections = new Channel(3);
         go(function() {
             $db = new \Swoole\Coroutine\Mysql();
@@ -81,13 +87,16 @@ class IndexController extends BaseController
                 'fetch_mode'=>true,
             ]);
             $this->backToPool($db);
-        });
-/*        $r = DB::table('ta')->save([
-           'name'=>'lisa','value'=>1,'create_time'=>date('Y-')
-        ]);*/
-        $r = $this->save([
-            'name'=>'lisa','value'=>1,'create_time'=>date('Y-')
+        }); */
+        $r = DB::table('ta')->save([
+           'name'=>'lisa','value'=>1,'create_time'=>date('Y-m-d H:i:s')
         ]);
+        /*
+        $r = $this->save([
+            ['name'=>'lisa2','value'=>2,'create_time'=>date('Y-m-d H:i:s')],
+            ['name'=>'lisa3','value'=>3,'create_time'=>date('Y-m-d H:i:s')],
+        ]);
+        */
         return ['r'=>$r];
     }
 

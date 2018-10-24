@@ -10,6 +10,7 @@ namespace core\db\mysql;
 
 use core\Pool;
 
+
 final class MysqlPool extends Pool
 {
     /**
@@ -37,6 +38,7 @@ final class MysqlPool extends Pool
     private function __construct($config = [])
     {
         $this->_config = array_merge($this->_config,$config);
+        //$this->_connections = new Channel($this->_config['max']);
         parent::__construct($this->_config['pool']);
     }
 
@@ -53,8 +55,10 @@ final class MysqlPool extends Pool
         go(function() {
             $db = new \Swoole\Coroutine\Mysql();
             $db->connect($this->_config['db']);
+            //$this->_count++;
             $this->backToPool($db);
         });
+        $this->_count++;
     }
 
     /**

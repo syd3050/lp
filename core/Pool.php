@@ -18,14 +18,14 @@ use \Swoole\Coroutine\Channel;
 abstract class Pool
 {
     private $_config = array(
-        'min'     => 5,
+        'min'     => 2,
         'max'     => 30,
         'timeout' => 3,
         'free_ttl'=> 3600,  //空闲时间超过1个小时的连接将被回收
-        'gc_rate' => 0.8,   //池中空闲连接数超过max*_gc_rate时，才会真正回收
+        '_gc_rate' => 0.8,   //池中空闲连接数超过max*_gc_rate时，才会真正回收
     );
 
-    private $_count = 0;
+    protected $_count = 0;
     protected $_connections = null;
 
     protected abstract function create();
@@ -43,7 +43,6 @@ abstract class Pool
         $min = $this->_config['min'];
         while ($this->_count < $min) {
             $this->create();
-            $this->_count++;
         }
         $this->gc();
         return $this;
@@ -51,26 +50,25 @@ abstract class Pool
 
     public function getFromPool($timeout = 0)
     {
-        /**
+        if($this->_connections->isEmpty() && $this->_count < $this->_config['max']) {
+            dev_dump(['getFromPool'=>'empty,count:'.$this->_count.',max:'.$this->_config['max']]);
+            $this->create();
+        }
+        /*
          * 1.连接池不为空，直接从连接池取连接实例返回;
          * 2.连接池为空，且已建立的连接总数超过最大限制，阻塞等待其他地方释放连接，超时返回false
+         * 指定超时时间，浮点型，单位为秒，最小粒度为毫秒，在规定时间内没有生产者push数据，将返回false
+         * $timeout参数在4.0.3或更高版本可用
          */
-        if(!$this->_connections->isEmpty() || $this->_count >= $this->_config['max']) {
-            /*
-             * 指定超时时间，浮点型，单位为秒，最小粒度为毫秒，在规定时间内没有生产者push数据，将返回false
-             * $timeout参数在4.0.3或更高版本可用
-             */
-            if($timeout <= 0)
-                $timeout = $this->_config['timeout'];
-            $r = $this->_connections->pop($timeout);
-            if($r) {
-                $r = $r['obj'];
-            }
-            return $r;
+        if($timeout <= 0)
+            $timeout = $this->_config['timeout'];
+        $r = $this->_connections->pop($timeout);
+        if($r) {
+            $r = $r['obj'];
+            var_dump(['getFromPool-after-length'=>$this->_connections->length()]);
         }
-        $instance = $this->create();
-        $this->_count++;
-        return $instance;
+        return $r;
+
     }
 
     public function backToPool($instance)
@@ -78,6 +76,7 @@ abstract class Pool
         $this->_connections->push([
             'obj'=>$instance,'last_access'=>time()
         ]);
+        var_dump(['backto'=>$this->poolSize()]);
     }
 
     public function poolSize()

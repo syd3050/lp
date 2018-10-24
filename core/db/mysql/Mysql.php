@@ -55,18 +55,28 @@ class Mysql extends DbBase
         //批量保存
         if(dimension($data) > 1) {
             $one = $data[key($data)];
-            $columns = '('. implode(',',array_keys($one)) . ')';
-            $values = '';
+            $keys = array_keys($one);
+            $columns = '('. implode(',',$keys) . ')';
+            $columns_num = count($keys);
+            $values = [];
+            $tokens = array_fill(0,$columns_num,'?');
+            $str = '('. implode(',',$tokens). ')';
+            $values_str = '';
             foreach ($data as $item) {
-                $values .= '('. implode(',',array_values($item)). '),';
+                $values = array_merge($values,array_values($item));
+                $values_str .= $str.',';
             }
-            $values = rtrim($values,',');
+            $values_str = rtrim($values_str,',');
         }else{
-            $columns = '('. implode(',',array_keys($data)) . ')';
-            $values = '('. implode(',',array_values($data)). ')';
+            $keys = array_keys($data);
+            $columns = '('. implode(',',$keys) . ')';
+            $columns_num = count($keys);
+            $values = array_values($data);
+            $values_str = array_fill(0,$columns_num,'?');
+            $values_str = '('. implode(',',$values_str) . ')';
         }
-        $sql = "INSERT INTO {$this->_table} {$columns} VALUES {$values};";
-        return $this->query($sql);
+        $sql = "INSERT INTO {$this->_table} {$columns} VALUES {$values_str};";
+        return $this->execute($sql,$values,-1);
     }
 
     /**
@@ -115,6 +125,10 @@ class Mysql extends DbBase
     public function execute($sql,$params=[],$timeout=-1)
     {
         list($sql,$params) = $this->parseSql($sql,$params);
+        dev_dump([
+            //'connection'=>md5($this->_pool),
+            'execute'=>'poolsize:'.$this->_pool->poolSize()
+        ]);
         /**
          * @var $db
          */
@@ -129,7 +143,9 @@ class Mysql extends DbBase
                 return null;
             $stmt = $db->prepare($sql);
         }
+        //var_dump(['param'=>$params,'sql'=>$sql]);
         $r = $stmt->execute($params,$timeout);
+        //var_dump(['execute-before-back'=>$this->_pool->poolSize()]);
         $this->_pool->backToPool($db);
         return  $r;
     }

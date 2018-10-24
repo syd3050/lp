@@ -45,7 +45,7 @@ class DB
         $type = ucwords($config['type']);
         if(!isset(self::$pools[$type])) {
             //需要重新创建
-            self::$pools[$type]['pool'] = call_user_func([$config['pool'],'getInstance']);
+            self::$pools[$type]['pool'] = call_user_func($config['pool'].'::getInstance');
             self::$pools[$type]['model'] = new $config['model'](self::$pools[$type]['pool']);
             return self::$pools[$type];
         }
