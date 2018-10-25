@@ -38,7 +38,6 @@ final class MysqlPool extends Pool
     private function __construct($config = [])
     {
         $this->_config = array_merge($this->_config,$config);
-        //$this->_connections = new Channel($this->_config['max']);
         parent::__construct($this->_config['pool']);
     }
 
@@ -50,13 +49,12 @@ final class MysqlPool extends Pool
         return self::$_instance;
     }
 
-    protected function create($class,$fun)
+    protected function create()
     {
-        go(function() use ($class,$fun) {
+        go(function(){
             $db = new \Swoole\Coroutine\Mysql();
             $db->connect($this->_config['db']);
-            //$this->_count++;
-            $this->backToPool($class,$fun,$db);
+            $this->backToPool($db);
         });
         $this->_count++;
     }

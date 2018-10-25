@@ -19,7 +19,7 @@ abstract class Pool
 {
     private $_config = array(
         'min'     => 2,
-        'max'     => 30,
+        'max'     => 10,
         'timeout' => 3,
         'free_ttl'=> 3600,  //空闲时间超过1个小时的连接将被回收
         '_gc_rate' => 0.8,   //池中空闲连接数超过max*_gc_rate时，才会真正回收
@@ -28,7 +28,7 @@ abstract class Pool
     protected $_count = 0;
     protected $_connections = null;
 
-    protected abstract function create($class,$fun);
+    protected abstract function create();
 
     public function __construct($config)
     {
@@ -38,22 +38,20 @@ abstract class Pool
         $this->_connections = new Channel($this->_config['max']);
     }
 
-    public function init($class)
+    public function init()
     {
         $min = $this->_config['min'];
         while ($this->_count < $min) {
-            $this->create($class,'init');
+            $this->create();
         }
         $this->gc();
         return $this;
     }
 
-    public function getFromPool($class,$timeout = 0)
+    public function getFromPool($timeout = 0)
     {
-        var_dump(['getFromPool-parent-class'=>$class]);
         if($this->_connections->isEmpty() && $this->_count < $this->_config['max']) {
-            var_dump(['getFromPool'=>'empty,count:'.$this->_count.',max:'.$this->_config['max']]);
-            $this->create($class,'getFromPool');
+            $this->create();
         }
         /*
          * 1.连接池不为空，直接从连接池取连接实例返回;
@@ -63,18 +61,18 @@ abstract class Pool
          */
         if($timeout <= 0)
             $timeout = $this->_config['timeout'];
+        //等待超时会返回false
         $r = $this->_connections->pop($timeout);
         if($r) {
             $r = $r['obj'];
-            var_dump(['getFromPool-after-length'=>$this->_connections->length()]);
         }
         return $r;
 
     }
 
-    public function backToPool($class,$fun,$instance)
+    public function backToPool($instance)
     {
-        var_dump(['backToPool-parent-class'=>$class.",fun:".$fun.',sizeBefore:'.$this->poolSize()]);
+        //var_dump(['backToPool-parent-class'=>'sizebf:'.$this->poolSize()]);
         $this->_connections->push([
             'obj'=>$instance,'last_access'=>time()
         ]);

@@ -86,22 +86,16 @@ class Mysql extends DbBase
      */
     public function query($sql,$timeout = -1)
     {
-        $db = $this->_pool->getFromPool(__CLASS__);
+        $db = $this->_pool->getFromPool($timeout);
         $db->setDefer();
         $r = $db->query($sql, $timeout);
         if(!$r) {
             //重连
-            if(!($db = $this->_reconnect($db)))
+            if(!($db = $this->_reconnect($db,$timeout)))
                 return null;
         }
         $r = $db->recv();
-        if(!$r) {
-            //重连
-            if(!($db = $this->_reconnect($db)))
-                return null;
-            $r = $db->recv();
-        }
-        $this->_pool->backToPool('Mysql','query',$db);
+        $this->_pool->backToPool($db);
         return $r;
     }
 
@@ -125,44 +119,42 @@ class Mysql extends DbBase
     public function execute($sql,$params=[],$timeout=-1)
     {
         list($sql,$params) = $this->parseSql($sql,$params);
-        var_dump([
-            //'connection'=>md5($this->_pool),
-            'execute'=>'poolsize:'.$this->_pool->poolSize()
-        ]);
         /**
          * @var $db
          */
-        $db = $this->_pool->getFromPool(__CLASS__);
+        $db = $this->_pool->getFromPool($timeout);
+        //连接池已无空闲连接且等待超时
+        if(!$db){
+            return null;
+        }
         /**
          * @var $stmt
          */
         $stmt = $db->prepare($sql);
         if($stmt == false) {
-            var_dump(['execute'=>'stmt is false']);
             //重连
-            if(!($db = $this->_reconnect($db)))
+            if(!($db = $this->_reconnect($db,$timeout)))
                 return null;
             $stmt = $db->prepare($sql);
         }
-        //var_dump(['param'=>$params,'sql'=>$sql]);
         $r = $stmt->execute($params,$timeout);
-        //var_dump(['execute-before-back'=>$this->_pool->poolSize()]);
-        $this->_pool->backToPool('Mysql',"execute",$db);
+        $this->_pool->backToPool($db);
         return  $r;
     }
 
     /**
      * 重连
      * @param  \Swoole\Coroutine\Mysql $db
+     * @param  float $timeout
      * @return \Swoole\Coroutine\Mysql | bool
      */
-    protected function _reconnect($db)
+    protected function _reconnect($db,$timeout=-1)
     {
         if ($db->errno == 2006 or $db->errno == 2013)
         {
             $times = $this->_pool->poolSize() + 1;
             do{
-                $db = $this->_pool->getFromPool(__CLASS__);
+                $db = $this->_pool->getFromPool($timeout);
                 $times--;
             }while(!$db && $times);
             return $db;
