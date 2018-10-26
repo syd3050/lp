@@ -52,7 +52,6 @@ class DB
 
         if(!isset(self::$pools[$type])) {
             //需要重新创建
-            var_dump(['init'=>'type:'.$type.',not exitst']);
             self::$pools[$type]['pool'] = call_user_func($config['pool'].'::getInstance');
             self::$pools[$type]['pool']->init();
             self::$pools[$type]['model'] = new $config['model'](self::$pools[$type]['pool']);

@@ -72,7 +72,6 @@ abstract class Pool
 
     public function backToPool($instance)
     {
-        //var_dump(['backToPool-parent-class'=>'sizebf:'.$this->poolSize()]);
         $this->_connections->push([
             'obj'=>$instance,'last_access'=>time()
         ]);
