@@ -7,10 +7,12 @@
  */
 namespace app\controller;
 
+use app\model\User;
 use core\BaseController;
+use core\Container;
 use core\db\DB;
 use core\session\Session;
-use Swoole\Coroutine\Channel;
+
 
 class IndexController extends BaseController
 {
@@ -20,6 +22,16 @@ class IndexController extends BaseController
     {
         Session::set('count',0);
         return ['count init'=>0];
+    }
+
+    public function ct()
+    {
+        $container = new Container();
+        $container->bind('user',function (){
+            return new User('Lilei');
+        });
+        $user = $container->make('user');
+        return ['name'=>$user->getName()];
     }
 
     public function backToPool($db)
