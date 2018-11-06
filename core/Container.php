@@ -31,6 +31,7 @@ class Container
     private $_binds = [];
     private $_singleton_binds = [];
     private $_singleton = [];
+    private $_instances = [];
     private static $_instance = null;
 
     private function __construct()
@@ -39,8 +40,8 @@ class Container
 
     public static function getContainer()
     {
-        if(!self::$_instance instanceof NContainer) {
-            self::$_instance = new NContainer();
+        if(!self::$_instance instanceof Container) {
+            self::$_instance = new Container();
         }
         return self::$_instance;
     }
@@ -61,6 +62,14 @@ class Container
         return $this;
     }
 
+    public function instance($name,$instance)
+    {
+        if(empty($name) || empty($instance))
+            throw new ServerException(__CLASS__."::".__FUNCTION__.",params can not be null");
+        $this->_instances[$name] = $instance;
+        return $this;
+    }
+
     private function _make_singleton($name,$param=[])
     {
         if(!isset($this->_singleton_binds[$name]))
@@ -76,6 +85,8 @@ class Container
     {
         if(!is_array($param))
             $param = [$param];
+        if(isset($this->_instances[$name]))
+            return $this->_instances[$name];
         if(!empty($this->_binds[$name]))
             $instance = $this->_build($this->_binds[$name],$param);
         else
