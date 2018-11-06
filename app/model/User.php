@@ -6,7 +6,7 @@ class User
 {
     private $_name;
 
-    public function __construct(string $name='Jim')
+    public function __construct(string $name)
     {
         $this->_name = $name;
     }
@@ -16,5 +16,8 @@ class User
         return $this->_name;
     }
 
-
+    public function setName(String $name)
+    {
+        $this->_name = $name;
+    }
 }

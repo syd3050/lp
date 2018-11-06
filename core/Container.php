@@ -8,10 +8,7 @@
 
 namespace core;
 
-
-use core\exception\ConfigException;
 use core\exception\ServerException;
-use http\Exception\RuntimeException;
 
 /**
  *
@@ -31,98 +28,85 @@ use http\Exception\RuntimeException;
  */
 class Container
 {
-    /**
-     *  容器绑定，用来装提供的实例或者 提供实例的回调函数
-     * @var array
-     */
-    public $building = [];
+    private $_binds = [];
+    private $_singleton_binds = [];
+    private $_singleton = [];
+    private static $_instance = null;
 
-    /**
-     * 绑定到容器
-     * @param $abstract
-     * @param $concrete
-     * @param bool $shared
-     */
-    public function bind($abstract, $concrete, $shared = false)
+    private function __construct()
     {
-        if(empty($concrete)){
-            throw new \RuntimeException(__CLASS__."::".__FUNCTION__.".Parameter concrete is needed!");
+    }
+
+    public static function getContainer()
+    {
+        if(!self::$_instance instanceof NContainer) {
+            self::$_instance = new NContainer();
         }
-        if(!$concrete instanceOf \Closure){
-            $concrete = function(Container $c) use($concrete){
-                return $c->make($concrete);
-            };
+        return self::$_instance;
+    }
+
+    public function bind($name,$stringOrClosure)
+    {
+        if(empty($name) || empty($stringOrClosure))
+            throw new ServerException(__CLASS__."::".__FUNCTION__.",params can not be null");
+        $this->_binds[$name] = $stringOrClosure;
+        return $this;
+    }
+
+    public function singleton($name,$stringOrClosure)
+    {
+        if(empty($name) || empty($stringOrClosure))
+            throw new ServerException(__CLASS__."::".__FUNCTION__.",params can not be null");
+        $this->_singleton_binds[$name] = $stringOrClosure;
+        return $this;
+    }
+
+    private function _make_singleton($name,$param=[])
+    {
+        if(!isset($this->_singleton_binds[$name]))
+            return false;
+        if(isset($this->_singleton[$name])) {
+            return $this->_singleton[$name];
         }
-        $this->building[$abstract] =  compact("concrete", "shared");
+        $stringOrClosure = $this->_singleton_binds[$name];
+        return $this->_singleton[$name] = $this->_build($stringOrClosure,$param);
     }
 
-    public function singleton($abstract, $concrete, $shared = true){
-        $this->bind($abstract, $concrete, $shared);
-    }
-
-    /**
-     * 生成实例
-     * @param $abstract
-     * @return mixed|object
-     * @throws ServerException
-     */
-    public function make($abstract)
+    public function make($name,$param=[])
     {
-        $concrete = $this->getConcrete($abstract);
-        return $this->build($concrete);
-    }
-
-    /**
-     * 是否可以创建服务实体
-     * 1.具体类和抽象类一致，可以build
-     * 2.具体类是一个闭包，可以build
-     * @param $concrete
-     * @param $abstract
-     * @return bool
-     */
-    public function isBuildable($concrete, $abstract)
-    {
-        return $concrete === $abstract || $concrete instanceof \Closure;
-    }
-
-    /**
-     * 获取绑定的回调函数
-     * 1.abstract已经绑定过，直接返回回调函数
-     * 2.abstract没有绑定过，返回它本身
-     * @param $abstract
-     * @return mixed
-     */
-    public function getConcrete($abstract)
-    {
-        if(! isset($this->building[$abstract])){
-            return $abstract;
+        if(!is_array($param))
+            $param = [$param];
+        if(!empty($this->_binds[$name]))
+            $instance = $this->_build($this->_binds[$name],$param);
+        else
+            $instance = $this->_make_singleton($name,$param);
+        if(!$instance) {
+            throw new ServerException(__CLASS__."::".__FUNCTION__.".Need to bind {$name} first.");
         }
-        return $this->building[$abstract]['concrete'];
+        return $instance;
     }
 
-    /**
-     * 根据实例具体名称实例具体对象
-     * @param $concrete
-     * @return mixed|object
-     * @throws ServerException
-     */
-    public function build($concrete)
+    private function _build($class,$param=[])
     {
-        if($concrete instanceof \Closure){
-            return $concrete($this);
+        if($class instanceof \Closure) {
+            return $class($this);
         }
         try{
-            $reflector = new \ReflectionClass($concrete);
+            $reflector = new \ReflectionClass($class);
             if( ! $reflector->isInstantiable()){
                 //抛出异常
-                throw new ServerException(__CLASS__."::".__FUNCTION__.'无法实例化'.$concrete);
+                throw new ServerException(__CLASS__."::".__FUNCTION__.'无法实例化'.$class);
             }
             $constructor = $reflector->getConstructor();
             if(is_null($constructor)){
-                return new $concrete;
+                return new $class;
             }
-            $dependencies = $constructor->getParameters();
-            $instance = $this->getDependencies($dependencies);
+            if(empty($param)) {
+                $dependencies = $constructor->getParameters();
+                $instance = $this->getDependencies($dependencies);
+            }else{
+                $instance = $param;
+            }
             return $reflector->newInstanceArgs($instance);
         }catch (\Exception $e) {
             //抛出异常
@@ -139,7 +123,6 @@ class Container
                 ?$this->resolvedNonClass($dependency)
                 :$this->resolvedClass($dependency);
         }
-
         return $results;
     }
 
@@ -149,8 +132,20 @@ class Container
         if($parameter->isDefaultValueAvailable()){
             return $parameter->getDefaultValue();
         }
-        throw new ConfigException(__CLASS__."::".__FUNCTION__.".参数{$parameter->getName()}没有默认值");
-
+        switch ($parameter->getType()) {
+            case 'int':
+                $value = 0;
+                break;
+            case 'array':
+                $value = [];
+                break;
+            case 'string':
+                $value = '';
+                break;
+            default:
+                $value = null;
+        }
+        return $value;
     }
 
     //通过容器解决依赖

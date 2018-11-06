@@ -11,6 +11,7 @@ use app\model\User;
 use core\BaseController;
 use core\Container;
 use core\db\DB;
+use core\NContainer;
 use core\session\Session;
 
 
@@ -26,12 +27,18 @@ class IndexController extends BaseController
 
     public function ct()
     {
-        $container = new Container();
-        $container->bind('user',function (){
-            return new User('Lilei');
+        $container = Container::getContainer();
+
+        //$container->bind('user','app\\model\\User');
+        /*
+        $container->singleton('user',function (){
+           return new User(randStr());
         });
-        $user = $container->make('user');
-        return ['name'=>$user->getName()];
+        */
+        $container->singleton('user','app\\model\\User');
+        $user = $container->make('user',[randStr()]);
+        $user2 = $container->make('user');
+        return ['name'=>$user->getName().','.$user2->getName()];
     }
 
     public function backToPool($db)
