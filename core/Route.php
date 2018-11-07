@@ -11,9 +11,13 @@ namespace core;
 
 use core\exception\ConfigException;
 use core\exception\ServerException;
+use core\interfaces\IRoute;
+use core\response\ResponseFactory;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class Route
+class Route implements IRoute
 {
     protected $default_controller;
     protected $default_action;
@@ -23,20 +27,40 @@ class Route
     protected $path;
     protected $queryArray;
     protected $target;
+    /**
+     * @var ServerRequestInterface $request
+     */
+    protected $request;
+    protected $exception = [];
     public $params=[];
     public $route;
     const CAA = 'c-a';
     const PAP = 'p-p';
+    protected $code = 200;
 
-    /**
-     * Route constructor.
-     * @param ServerRequestInterface $request
-     * @throws ConfigException
-     */
-    public function __construct($request)
+    protected function loadConfig()
     {
-        //必须先加载路由配置文件
-        $this->loadConfig();
+        $route_config = Config::get(Config::ROUTE);
+        if(empty($route_config['default_controller'])) {
+            $this->exception[] = "route.php中缺少default_controller配置";
+            return false;
+        }
+        if(empty($route_config['default_action'])) {
+            $this->exception[] = "route.php中缺少default_action配置";
+            return false;
+        }
+        $this->default_controller = ucwords($route_config['default_controller']);
+        $this->default_action = $route_config['default_action'];
+        unset($route_config['default_controller']);
+        unset($route_config['default_action']);
+
+        self::_parse_route_config($route_config);
+        return true;
+    }
+
+    protected function parseRequest(ServerRequestInterface $request)
+    {
+        $this->request = $request;
         $this->queryArray = $request->getQueryParams();
         $this->target = $request->getRequestTarget();
         /*
@@ -69,21 +93,6 @@ class Route
         }
     }
 
-    protected function loadConfig()
-    {
-        $route_config = Config::get(Config::ROUTE);
-        if(empty($route_config['default_controller']))
-            throw new ConfigException("route.php中缺少default_controller配置");
-        if(empty($route_config['default_action']))
-            throw new ConfigException("route.php中缺少default_action配置");
-        $this->default_controller = ucwords($route_config['default_controller']);
-        $this->default_action = $route_config['default_action'];
-        unset($route_config['default_controller']);
-        unset($route_config['default_action']);
-
-        self::_parse_route_config($route_config);
-    }
-
     /**
      * 解析route.php配置文件，将含正则表达式的路由处理为controller-action并缓存
      * 针对
@@ -108,7 +117,6 @@ class Route
      */
     private static function _parse_route_config($route_config)
     {
-        //dev_dump(['route_config'=>$route_config]);
         /* 将配置文件中所有非正则表达式的项作为全匹配路径全部进本地缓存 */
         if(empty(LocalCache::get('route_full_path')) && isset($route_config['direct-uri']))
         {
@@ -119,7 +127,6 @@ class Route
                 $tmp[$k] = explode('/',$v);
             }
             LocalCache::set('route_full_path',$tmp);
-            //dev_dump(['route.full.path'=>$tmp]);
         }
         unset($route_config['direct-uri']);
         if(empty($route_config) || !empty(LocalCache::get('route_snapshot')))
@@ -149,7 +156,6 @@ class Route
             }
         }
         LocalCache::set('route_snapshot',$snapshot);
-        //dev_dump(['route.snapshot'=>$snapshot]);
     }
 
     protected function currentParse($routes)
@@ -169,10 +175,17 @@ class Route
 
     /**
      * 解析当前uri
+     *
+     * @param ServerRequestInterface $request
      * @return bool
      */
-    protected function parseRoute()
+    public function parseRoute(ServerRequestInterface $request)
     {
+        //必须先加载路由配置文件
+        if(!$this->loadConfig()){
+            return false;
+        }
+        $this->parseRequest($request);
         $snapshot = LocalCache::get("route_snapshot");
         //dev_dump(['parseRoute:snapshot'=>$snapshot]);
         /**
@@ -215,18 +228,27 @@ class Route
             }
             return true;
         }
+        return false;
     }
 
-    public function dispatch()
+    public function dispatch($controller,$action,$param=[])
     {
-        $this->parseRoute();
         $controller = 'app\\controller\\'.$this->controller.'Controller';
-        if(!class_exists($controller))
-            throw new ServerException("Controller {$controller} 不存在！ \n",404);
         $class = new $controller();
-        if(!method_exists($class,$this->action))
-            throw new ServerException("$class 中方法 {$this->action} 不存在 !\n",404);
-        return call_user_func_array(array($class,$this->action),$this->params);
+        if(!class_exists($controller) || !method_exists($class,$this->action)) {
+            $this->exception[] = "{$this->request->getRequestTarget()} 不存在 !";
+            $this->code = 404;
+        }
+        /**
+         * @var ResponseFactoryInterface $factory
+         */
+        $factory = Container::getContainer()->make("Psr\\Http\\Message\\ResponseFactoryInterface");
+        if(!empty($this->exception)) {
+            $reason = implode("\n",$this->exception);
+            return $factory->createResponse(500,$reason);
+        }
+        $result = call_user_func_array(array($class,$this->action),$this->params);
+        return $factory->createResponse($this->code,'')->withBody($result);
     }
 
     public function getController()
@@ -234,11 +256,14 @@ class Route
         return $this->controller;
     }
 
-    public function getActon()
+    public function getAction()
     {
         return $this->action;
     }
 
-
+    public function getParams()
+    {
+        return $this->params;
+    }
 
 }

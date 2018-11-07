@@ -88,20 +88,19 @@ class Server
             $this->request = $this->_build_request($request);
             $psr_response = null;
 
-            try{
-                //路由解析
-                $route = new Route($this->request);
-                $result = $route->dispatch();
-            }catch (\Exception $exception)
-            {
-                $result = $exception->getMessage();
-                $response->status($exception->getCode());
-            }
+            //路由解析
+            $route = new Route();
+            list($controller,$action,$params) = $route->parseRoute($this->request);
+            $psr_response = $route->dispatch($controller,$action,$params);
+            $result = $psr_response->getBody();
+            $response->status($psr_response->getStatusCode());
+
             $header = $this->_set_header();
             foreach ($header as $k=>$v)
             {
                 $response->header($k, $v);
             }
+
             $response->end(json_encode($result)."\n");
         });
 
